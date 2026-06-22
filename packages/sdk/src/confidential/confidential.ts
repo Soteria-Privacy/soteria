@@ -11,8 +11,8 @@ import {
   TOKEN_2022_PROGRAM_ID,
   createInitializeMintInstruction,
   getMintLen,
-  createInitializeConfidentialTransferMintInstruction,
 } from "@solana/spl-token";
+import * as splToken from "@solana/spl-token";
 
 /**
  * Confidential amounts via the Token-2022 Confidential Transfer extension.
@@ -55,6 +55,18 @@ export async function createConfidentialMint(
   payer: Keypair,
   cfg: ConfidentialMintConfig
 ): Promise<PublicKey> {
+  // Resolved at call time: not every @solana/spl-token build ships the
+  // ConfidentialTransfer instructions yet.
+  const createInitConfidentialIx = (splToken as Record<string, unknown>)
+    .createInitializeConfidentialTransferMintInstruction as
+    | ((...args: unknown[]) => import("@solana/web3.js").TransactionInstruction)
+    | undefined;
+  if (!createInitConfidentialIx) {
+    throw new Error(
+      "confidential transfer is unavailable in this @solana/spl-token build"
+    );
+  }
+
   const mint = Keypair.generate();
   const extensions = [ExtensionType.ConfidentialTransferMint];
   const space = getMintLen(extensions);
@@ -68,7 +80,7 @@ export async function createConfidentialMint(
       lamports,
       programId: TOKEN_2022_PROGRAM_ID,
     }),
-    createInitializeConfidentialTransferMintInstruction(
+    createInitConfidentialIx(
       mint.publicKey,
       cfg.mintAuthority,
       cfg.autoApproveNewAccounts ?? true,

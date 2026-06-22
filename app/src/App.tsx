@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Shield } from "./components/Shield";
 import { StealthPanel } from "./components/StealthPanel";
 import { CredentialPanel } from "./components/CredentialPanel";
@@ -26,7 +27,10 @@ export default function App() {
             <div className="tag">solana privacy toolkit</div>
           </div>
         </div>
-        <div className="tag">devnet</div>
+        <div className="bar-right">
+          <span className="tag">devnet</span>
+          <WalletMultiButton />
+        </div>
       </div>
 
       <section className="hero">

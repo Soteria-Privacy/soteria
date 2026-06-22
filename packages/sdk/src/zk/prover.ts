@@ -39,15 +39,21 @@ export interface FormattedProof {
   publicInputs: number[][]; // [nullifierHash, merkleRoot, externalNullifier, signalHash]
 }
 
+export interface RawProof {
+  proof: { pi_a: string[]; pi_b: string[][]; pi_c: string[] };
+  publicSignals: string[];
+}
+
 /**
- * Generate a selective-disclosure proof and format it for the on-chain verifier.
- * Requires the circuit artifacts from the trusted setup (see README).
+ * Generate the raw snarkjs proof + public signals. Use this when submitting via
+ * the relay, which formats the bytes server-side. Requires the trusted-setup
+ * artifacts (see README).
  */
-export async function proveCredential(
+export async function proveCredentialRaw(
   inputs: CredentialInputs,
   wasmPath: string,
   zkeyPath: string
-): Promise<FormattedProof> {
+): Promise<RawProof> {
   const { secret, tree, leafIndex, externalNullifier, signalHash } = inputs;
   const { pathElements, pathIndices } = tree.proof(leafIndex);
 
@@ -60,11 +66,20 @@ export async function proveCredential(
     signalHash: signalHash.toString(),
   };
 
-  const { proof, publicSignals } = await groth16.fullProve(
-    witness,
-    wasmPath,
-    zkeyPath
-  );
+  const { proof, publicSignals } = await groth16.fullProve(witness, wasmPath, zkeyPath);
+  return { proof, publicSignals };
+}
+
+/**
+ * Generate a selective-disclosure proof and format it for the on-chain verifier
+ * (direct submission). For the relay path, use proveCredentialRaw.
+ */
+export async function proveCredential(
+  inputs: CredentialInputs,
+  wasmPath: string,
+  zkeyPath: string
+): Promise<FormattedProof> {
+  const { proof, publicSignals } = await proveCredentialRaw(inputs, wasmPath, zkeyPath);
 
   // --- proof.A : negate y, then x||y big-endian (groth16-solana wants -A) ---
   const ax = BigInt(proof.pi_a[0]);

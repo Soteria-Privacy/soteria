@@ -6,6 +6,8 @@
   "workspaces": ["packages/*", "server", "app"],
   "scripts": {
     "build:sdk": "npm -w packages/sdk run build",
+    "build:app": "npm -w @soteria/app run build",
+    "build": "npm run build:sdk && npm run build:app",
     "dev:server": "npm -w server run dev",
     "dev:app": "npm -w app run dev",
     "anchor:build": "anchor build",

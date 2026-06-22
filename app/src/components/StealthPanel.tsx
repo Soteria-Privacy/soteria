@@ -42,7 +42,7 @@ export function StealthPanel() {
         Generate a meta-address you can share publicly. Senders derive a fresh one-time
         address per payment, so your main wallet never appears as the recipient.
       </p>
-      <span className="status">mainnet-ready</span>
+      <span className="status">devnet</span>
 
       <div className="row" style={{ marginTop: 18 }}>
         <button className="act" onClick={makeMeta}>Generate meta-address</button>

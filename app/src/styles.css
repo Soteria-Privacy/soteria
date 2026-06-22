@@ -38,6 +38,9 @@ body {
 
 /* ── top bar ── */
 .bar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; }
+.bar-right { display: flex; align-items: center; gap: 12px; }
+.readout a { color: #7aa2ff; text-decoration: none; }
+.readout a:hover { text-decoration: underline; }
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand .mark { width: 26px; height: 26px; }
 .brand h1 { font-size: 17px; letter-spacing: 0.04em; margin: 0; font-weight: 600; }
