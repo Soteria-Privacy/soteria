@@ -1,5 +1,5 @@
 /**
- * Aegis SDK — privacy primitives for Solana.
+ * Soteria SDK — privacy primitives for Solana.
  *
  *   zk           Selective disclosure: prove membership/eligibility without
  *                revealing which identity. (mainnet-ready)

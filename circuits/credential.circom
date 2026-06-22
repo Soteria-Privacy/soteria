@@ -4,7 +4,7 @@ include "circomlib/circuits/poseidon.circom";
 include "circomlib/circuits/mux1.circom";
 
 // ---------------------------------------------------------------------------
-// Aegis selective-disclosure circuit
+// Soteria selective-disclosure circuit
 //
 // Proves: knowledge of a `secret` whose identity commitment Poseidon(secret)
 // is a leaf in the published `merkleRoot`, and derives a unique `nullifierHash`

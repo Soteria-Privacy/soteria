@@ -6,10 +6,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-aegis_verifier = "Aeg1sVeri11111111111111111111111111111111111"
+soteria_verifier = "Aeg1sVeri11111111111111111111111111111111111"
 
 [programs.devnet]
-aegis_verifier = "Aeg1sVeri11111111111111111111111111111111111"
+soteria_verifier = "Aeg1sVeri11111111111111111111111111111111111"
 
 [registry]
 url = "https://api.apr.dev"

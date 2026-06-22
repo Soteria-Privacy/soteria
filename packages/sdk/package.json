@@ -1,7 +1,7 @@
 {
-  "name": "@aegis/sdk",
+  "name": "@soteria/sdk",
   "version": "0.1.0",
-  "description": "Aegis client SDK: zk selective disclosure, stealth receiving, confidential amounts.",
+  "description": "Soteria client SDK: zk selective disclosure, stealth receiving, confidential amounts.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

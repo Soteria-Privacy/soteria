@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { zk, SERVER } from "../lib/aegis";
+import { zk, SERVER } from "../lib/soteria";
 
 /**
  * Demonstrates building the membership set + root client-side. Generating an
@@ -65,7 +65,7 @@ export function CredentialPanel() {
 
       <p className="hint">
         Proof generation: add credential.wasm + credential_final.zkey to app/public,
-        then call zk.proveCredential(...) and submit to the aegis_verifier program.
+        then call zk.proveCredential(...) and submit to the soteria_verifier program.
       </p>
     </div>
   );

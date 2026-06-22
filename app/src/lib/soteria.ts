@@ -1,6 +1,6 @@
-import { stealth, zk } from "@aegis/sdk";
+import { stealth, zk } from "@soteria/sdk";
 
-export const SERVER = import.meta.env.VITE_AEGIS_SERVER ?? "http://localhost:8787";
+export const SERVER = import.meta.env.VITE_SOTERIA_SERVER ?? "http://localhost:8787";
 
 export function toB64(u: Uint8Array): string {
   let s = "";

@@ -1,14 +1,14 @@
 {
-  "name": "@aegis/server",
+  "name": "@soteria/server",
   "version": "0.1.0",
   "type": "module",
-  "description": "Aegis backend: stealth announcement registry + merkle root publisher + proof relay.",
+  "description": "Soteria backend: stealth announcement registry + merkle root publisher + proof relay.",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "node --loader tsx dist/index.js"
   },
   "dependencies": {
-    "@aegis/sdk": "*",
+    "@soteria/sdk": "*",
     "@solana/web3.js": "^1.95.4",
     "cors": "^2.8.5",
     "express": "^4.21.1"

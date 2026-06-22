@@ -1,11 +1,11 @@
-# Aegis — Solana Privacy Toolkit
+# Soteria — Solana Privacy Toolkit
 
 Privacy primitives for Solana that protect users **without breaking the
 sender↔recipient transaction graph**. No mixing pools, no deposit/withdraw that
 severs the link between funds. Every module keeps an auditor / disclosure path.
 
 ```
-contract  →  programs/aegis-verifier   (Anchor: on-chain Groth16 verifier + nullifier registry)
+contract  →  programs/soteria-verifier (Anchor: on-chain Groth16 verifier + nullifier registry)
 sdk       →  packages/sdk              (TypeScript client: zk · stealth · confidential)
 backend   →  server                    (Express: announcement registry · member sets · proof relay)
 frontend  →  app                       (Vite + React: try all three primitives)
@@ -48,13 +48,13 @@ npm i -g circom snarkjs && npm i circomlib
 
 circom circuits/credential.circom --r1cs --wasm --sym -l node_modules
 snarkjs powersoftau new bn128 14 pot14_0000.ptau -v
-snarkjs powersoftau contribute pot14_0000.ptau pot14_0001.ptau --name="aegis" -v
+snarkjs powersoftau contribute pot14_0000.ptau pot14_0001.ptau --name="soteria" -v
 snarkjs powersoftau prepare phase2 pot14_0001.ptau pot14_final.ptau -v
 snarkjs groth16 setup credential.r1cs pot14_final.ptau credential_0000.zkey
-snarkjs zkey contribute credential_0000.zkey credential_final.zkey --name="aegis" -v
+snarkjs zkey contribute credential_0000.zkey credential_final.zkey --name="soteria" -v
 snarkjs zkey export verificationkey credential_final.zkey verification_key.json
 # convert verification_key.json -> Groth16Verifyingkey constant in
-# programs/aegis-verifier/src/verifying_key.rs (use groth16-solana's vk parser)
+# programs/soteria-verifier/src/verifying_key.rs (use groth16-solana's vk parser)
 ```
 
 Runtime artifacts for the client: `credential.wasm`, `credential_final.zkey`
@@ -84,7 +84,7 @@ solana-test-validator -r \
 
 ## What this is not
 
-Aegis deliberately omits any feature whose function is to pool deposits and let
+Soteria deliberately omits any feature whose function is to pool deposits and let
 them be withdrawn with the on-chain link severed. That design (a tumbler) is what
 carries money-transmitter / laundering exposure; it is out of scope by choice.
 

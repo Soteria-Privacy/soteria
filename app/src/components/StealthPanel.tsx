@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { stealth, toB64, short, SERVER } from "../lib/aegis";
+import { stealth, toB64, short, SERVER } from "../lib/soteria";
 
 export function StealthPanel() {
   const [keys, setKeys] = useState<ReturnType<typeof stealth.generateStealthKeys> | null>(null);

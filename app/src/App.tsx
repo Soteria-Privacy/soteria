@@ -22,7 +22,7 @@ export default function App() {
             <circle cx="12" cy="11" r="2.4" fill="#9d7bff" />
           </svg>
           <div>
-            <h1>AEGIS</h1>
+            <h1>SOTERIA</h1>
             <div className="tag">solana privacy toolkit</div>
           </div>
         </div>

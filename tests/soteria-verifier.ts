@@ -11,7 +11,7 @@ import { Program } from "@coral-xyz/anchor";
  *        .accounts({ payer, nullifier, systemProgram }).rpc()
  *   4. assert a second submit with the same nullifier fails (PDA already init)
  */
-describe("aegis_verifier", () => {
+describe("soteria_verifier", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
 
   it("verifies a selective-disclosure proof and burns the nullifier", async () => {

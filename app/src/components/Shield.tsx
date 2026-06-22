@@ -1,6 +1,6 @@
 /**
  * Signature element. A small transaction graph stays fully visible — edges,
- * senders, recipients — making the point that Aegis does NOT break the graph.
+ * senders, recipients — making the point that Soteria does NOT break the graph.
  * One node pulses violet: its payload (amount / identity) is shielded while the
  * link itself remains auditable.
  */

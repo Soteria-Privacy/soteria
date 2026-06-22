@@ -1,5 +1,5 @@
 {
-  "name": "@aegis/app",
+  "name": "@soteria/app",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@aegis/sdk": "*",
+    "@soteria/sdk": "*",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.35",

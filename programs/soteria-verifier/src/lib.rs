@@ -20,7 +20,7 @@ declare_id!("Aeg1sVeri11111111111111111111111111111111111");
 const NUM_PUBLIC_INPUTS: usize = 4;
 
 #[program]
-pub mod aegis_verifier {
+pub mod soteria_verifier {
     use super::*;
 
     /// Verify a selective-disclosure proof and burn its nullifier so the same
@@ -37,16 +37,16 @@ pub mod aegis_verifier {
         // (public_inputs[0] == nullifierHash, see ordering note above.)
         require!(
             ctx.accounts.nullifier.seed == public_inputs[0],
-            AegisError::NullifierMismatch
+            SoteriaError::NullifierMismatch
         );
 
         let mut verifier =
             Groth16Verifier::new(&proof_a, &proof_b, &proof_c, &public_inputs, &VERIFYINGKEY)
-                .map_err(|_| AegisError::MalformedProof)?;
+                .map_err(|_| SoteriaError::MalformedProof)?;
 
         verifier
             .verify()
-            .map_err(|_| AegisError::ProofVerificationFailed)?;
+            .map_err(|_| SoteriaError::ProofVerificationFailed)?;
 
         // Record the merkle root the proof was made against (caller validates
         // it matches a known/recent published root before trusting the result).
@@ -107,7 +107,7 @@ pub struct Disclosed {
 }
 
 #[error_code]
-pub enum AegisError {
+pub enum SoteriaError {
     #[msg("nullifier PDA seed does not match the proof's nullifier hash")]
     NullifierMismatch,
     #[msg("proof bytes are malformed")]

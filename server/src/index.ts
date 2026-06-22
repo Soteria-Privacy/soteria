@@ -8,7 +8,7 @@ app.use(express.json({ limit: "1mb" }));
 
 const PORT = Number(process.env.PORT ?? 8787);
 
-app.get("/health", (_req, res) => res.json({ ok: true, service: "aegis" }));
+app.get("/health", (_req, res) => res.json({ ok: true, service: "soteria" }));
 
 // ── Stealth announcement registry ────────────────────────────────────────────
 // Senders publish the ephemeral key (R) + view tag here; recipients scan it.
@@ -69,13 +69,13 @@ app.post("/relay/verify", async (req, res) => {
   if (store.isSpent(nullifierHash)) {
     return res.status(409).json({ error: "nullifier already spent" });
   }
-  // TODO: build + send the aegis_verifier `verify` instruction with the
+  // TODO: build + send the soteria_verifier `verify` instruction with the
   // proof bytes from req.body using @coral-xyz/anchor and a relayer keypair.
   // On confirmation:
   store.markSpent(nullifierHash);
-  res.json({ ok: true, note: "wire to aegis_verifier program to send on-chain" });
+  res.json({ ok: true, note: "wire to soteria_verifier program to send on-chain" });
 });
 
 app.listen(PORT, () => {
-  console.log(`aegis server listening on http://localhost:${PORT}`);
+  console.log(`soteria server listening on http://localhost:${PORT}`);
 });
