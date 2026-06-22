@@ -89,25 +89,45 @@ export async function proveCredential(
   return { proofA, proofB, proofC, publicInputs };
 }
 
-/** Derive the nullifier PDA (seed = nullifierHash = publicInputs[0]). */
-export function nullifierPda(nullifierHash: number[]): [PublicKey, number] {
+function u64le(n: bigint | number): Buffer {
+  const b = Buffer.alloc(8);
+  b.writeBigUInt64LE(BigInt(n));
+  return b;
+}
+
+export function groupPda(groupId: bigint | number): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("nullifier"), Buffer.from(nullifierHash)],
+    [Buffer.from("group"), u64le(groupId)],
+    VERIFIER_PROGRAM_ID
+  );
+}
+
+export function nullifierPda(
+  groupId: bigint | number,
+  nullifierHash: number[]
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("nullifier"), u64le(groupId), Buffer.from(nullifierHash)],
     VERIFIER_PROGRAM_ID
   );
 }
 
 /**
- * Build the `verify` instruction. NOTE: encode args to match your generated
- * Anchor IDL (use @coral-xyz/anchor's program.methods.verify(...) in practice);
- * the manual layout below shows the account set + ordering.
+ * Account set for `verify_proof`, ordered to match the on-chain context.
+ * Encode args with @coral-xyz/anchor's program.methods.verifyProof(...) IDL client.
  */
-export function buildVerifyAccounts(payer: PublicKey, proof: FormattedProof) {
-  const [nullifier] = nullifierPda(proof.publicInputs[0]);
+export function buildVerifyAccounts(
+  payer: PublicKey,
+  groupId: bigint | number,
+  proof: FormattedProof
+) {
+  const [group] = groupPda(groupId);
+  const [nullifier] = nullifierPda(groupId, proof.publicInputs[0]);
   return {
     programId: VERIFIER_PROGRAM_ID,
     keys: [
       { pubkey: payer, isSigner: true, isWritable: true },
+      { pubkey: group, isSigner: false, isWritable: false },
       { pubkey: nullifier, isSigner: false, isWritable: true },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
