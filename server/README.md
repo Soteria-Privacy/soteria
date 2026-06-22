@@ -45,6 +45,35 @@ npm -w server run dev                    # http://localhost:8787
 npm -w server test                       # vitest
 ```
 
+### Local Postgres (one-time)
+
+```bash
+export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
+initdb -D ~/.soteria-pgdata -U postgres --auth=trust          # first time only
+pg_ctl -D ~/.soteria-pgdata -o "-p 5433 -k /tmp" -l ~/.soteria-pgdata/server.log start
+createdb -p 5433 -h localhost -U postgres soteria             # first time only
+# DATABASE_URL=postgres://postgres@localhost:5433/soteria
+```
+
+### Generated keys / devnet funding
+
+`server/.env` (gitignored) holds generated `RELAYER_SECRET_KEY` and
+`AUTHORITY_SECRET_KEY`. Before `/relay/verify` or `/groups` can submit, fund their
+pubkeys on devnet (the CLI faucet is often rate-limited — use
+[faucet.solana.com](https://faucet.solana.com) if `airdrop` fails):
+
+```bash
+solana airdrop 1 <RELAYER_PUBKEY>  --url devnet
+solana airdrop 1 <AUTHORITY_PUBKEY> --url devnet
+```
+
+Then bootstrap a group for the credential demo:
+
+```bash
+curl -X POST localhost:8787/groups -H "x-api-key: $ADMIN_API_KEY" \
+  -H 'content-type: application/json' -d '{"groupId":0,"setId":"demo"}'
+```
+
 ## API
 
 | Method | Path | Auth | Purpose |
