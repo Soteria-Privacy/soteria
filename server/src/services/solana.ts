@@ -10,6 +10,8 @@ import {
   type TransactionInstruction,
 } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
+// Under ESM, `anchor.BN` is undefined — it's only on the CJS default export.
+const { BN } = anchor.default ?? anchor;
 import bs58 from "bs58";
 import { config } from "../config.js";
 import { logger } from "../logger.js";
@@ -95,7 +97,7 @@ export class SolanaService {
   async createGroup(groupId: number): Promise<string> {
     if (!this.authority) throw new Error("authority keypair not configured");
     const ix = await this.program.methods
-      .createGroup(new anchor.BN(groupId))
+      .createGroup(new BN(groupId))
       .accounts({ authority: this.authority.publicKey, group: this.groupPda(groupId) })
       .instruction();
     return this.send([ix], this.authority);
