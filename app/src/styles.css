@@ -343,3 +343,40 @@ a.act { text-decoration: none; display: inline-flex; align-items: center; }
   .tabs { grid-template-columns: 1fr; }
   .wrap { padding: 22px 18px 70px; }
 }
+
+/* ── private payments ─────────────────────────────────────────────── */
+.pay { max-width: 760px; margin: 0 auto; }
+.pay-head { text-align: center; margin-bottom: 22px; }
+.pay-head h2 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
+.pay-head .sub { color: var(--muted); font-size: 14.5px; max-width: 56ch; margin: 12px auto 0; }
+.seg {
+  display: inline-flex; gap: 4px; margin-top: 22px; padding: 4px;
+  border: 1px solid var(--line-2); border-radius: 999px; background: rgba(255,255,255,0.02);
+}
+.seg button {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); background: none; border: none; cursor: pointer;
+  padding: 9px 22px; border-radius: 999px; transition: all 0.2s;
+}
+.seg button.on { color: #0a0c18; background: var(--honest); box-shadow: 0 0 18px rgba(52,231,207,0.4); }
+.qr-wrap { display: flex; gap: 20px; align-items: center; margin-top: 18px; flex-wrap: wrap; }
+.qr {
+  padding: 14px; border-radius: 16px; border: 1px solid var(--line-2);
+  background: rgba(176,124,255,0.06); line-height: 0; flex-shrink: 0;
+}
+.qr-side { flex: 1; min-width: 220px; }
+.linkbox {
+  display: flex; align-items: center; gap: 10px; margin-top: 12px;
+  padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line-2); background: rgba(255,255,255,0.02);
+}
+.linkbox code { font-family: var(--mono); font-size: 12px; color: var(--honest); flex: 1; overflow: hidden; }
+.mini {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--shield); background: rgba(176,124,255,0.1); border: 1px solid rgba(176,124,255,0.3);
+  border-radius: 8px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.mini:hover:not(:disabled) { background: rgba(176,124,255,0.2); }
+.mini:disabled { opacity: 0.5; cursor: progress; }
+.payrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; }
+.payrow + .payrow { border-top: 1px solid var(--line); }
+.payrow .mini, .payrow .ok { margin-left: auto; }

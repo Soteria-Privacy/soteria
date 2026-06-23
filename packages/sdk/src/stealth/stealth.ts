@@ -72,6 +72,24 @@ export function generateStealthKeys(): StealthKeys {
 }
 
 /**
+ * Derive a recipient's stealth keys deterministically from a `seed` — typically
+ * the recipient's signature over a fixed message from their main wallet.
+ *
+ * Because the same seed always yields the same keys, the recipient recovers
+ * their entire stealth identity from their wallet alone: nothing is stored, and
+ * losing local state loses nothing. Spend and view scalars are domain-separated
+ * so the view key (shareable with a scanning service) never leaks the spend key.
+ */
+export function deriveStealthKeys(seed: Uint8Array): StealthKeys {
+  const enc = new TextEncoder();
+  const s = hashToScalar(enc.encode("soteria:stealth:spend:v1"), seed);
+  const v = hashToScalar(enc.encode("soteria:stealth:view:v1"), seed);
+  const spendPub = Base.multiply(s).toRawBytes();
+  const viewPub = Base.multiply(v).toRawBytes();
+  return { spendScalar: s, viewScalar: v, meta: { spendPub, viewPub } };
+}
+
+/**
  * SENDER: derive a one-time stealth address for a recipient's meta-address.
  * Publish `ephemeralPub` (R) and `viewTag` so the recipient can detect it.
  */

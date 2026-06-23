@@ -3,9 +3,18 @@ import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Landing } from "./components/Landing";
 import { Workspace } from "./components/Workspace";
+import { PayApp } from "./components/PayApp";
 
-type View = "landing" | "app";
+type View = "landing" | "app" | "pay";
 type Module = "credential" | "stealth" | "confidential";
+
+function initialView(): View {
+  if (typeof location === "undefined") return "landing";
+  const params = new URLSearchParams(location.search);
+  if (params.get("pay") !== null || location.hash === "#pay") return "pay";
+  if (location.hash === "#app") return "app";
+  return "landing";
+}
 
 function Sigil() {
   return (
@@ -19,9 +28,7 @@ function Sigil() {
 }
 
 export default function App() {
-  const [view, setView] = useState<View>(
-    () => (typeof location !== "undefined" && location.hash === "#app" ? "app" : "landing")
-  );
+  const [view, setView] = useState<View>(initialView);
   const [tab, setTab] = useState<Module>("credential");
 
   return (
@@ -40,7 +47,10 @@ export default function App() {
             </div>
           </button>
           <nav className="bar-right">
-            {view === "app" && (
+            {view !== "pay" && (
+              <button className="nav-link" onClick={() => setView("pay")}>payments</button>
+            )}
+            {view !== "landing" && (
               <button className="nav-link" onClick={() => setView("landing")}>← home</button>
             )}
             <span className="tag pill">devnet</span>
@@ -58,6 +68,16 @@ export default function App() {
               transition={{ duration: 0.4 }}
             >
               <Landing onEnter={() => setView("app")} />
+            </motion.div>
+          ) : view === "pay" ? (
+            <motion.div
+              key="pay"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <PayApp />
             </motion.div>
           ) : (
             <motion.div
