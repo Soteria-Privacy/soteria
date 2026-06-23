@@ -26,9 +26,18 @@ export function encodeMeta(meta: MetaAddress): string {
   return toB64(buf).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export function decodeMeta(s: string): MetaAddress {
-  const b64 = s.replace(/-/g, "+").replace(/_/g, "/");
+// Accept either a bare code or a full pay link (e.g. ".../?pay=<code>#pay").
+export function extractPayCode(input: string): string {
+  const s = input.trim();
+  const m = s.match(/[?&]pay=([^&#\s]+)/);
+  return m ? decodeURIComponent(m[1]) : s;
+}
+
+export function decodeMeta(input: string): MetaAddress {
+  const code = extractPayCode(input);
+  const b64 = code.replace(/-/g, "+").replace(/_/g, "/");
   const bytes = fromB64(b64 + "=".repeat((4 - (b64.length % 4)) % 4));
+  if (bytes.length < 64) throw new Error("invalid payment link");
   return { spendPub: bytes.slice(0, 32), viewPub: bytes.slice(32, 64) };
 }
 
