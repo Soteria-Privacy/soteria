@@ -6,8 +6,8 @@ import { Marquee } from "./ui/marquee";
 import { Spotlight } from "./ui/spotlight";
 
 const CREDS = [
-  "groth16", "alt_bn128", "poseidon merkle", "scoped nullifier", "token-2022",
-  "ed25519 stealth", "ElGamal auditor", "no mixer", "no link-severing",
+  "one shareable link", "fresh address per payment", "self-custodial", "no mixer",
+  "your wallet stays hidden", "ed25519 stealth", "sweep anytime", "open SDK",
 ];
 
 const container: Variants = {
@@ -19,7 +19,7 @@ const item: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
 };
 
-export function Landing({ onEnter }: { onEnter: () => void }) {
+export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => void }) {
   return (
     <section className="hero-full">
       <div className="hero-bg">
@@ -41,21 +41,29 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
 
       <motion.div className="hero-center" variants={container} initial="hidden" animate="show">
         <motion.div className="eyebrow centered" variants={item}>
-          Solana · no mixer · auditor-native
+          Solana · self-custodial · no mixer
         </motion.div>
         <motion.h1 variants={item}>
-          Hide the <AuroraText className="cipher" colors={["#b07cff", "#ff5db1", "#b07cff"]}>payload</AuroraText>.
+          Get paid on Solana,
           <br />
-          Keep the <AuroraText colors={["#34e7cf", "#5bd1ff", "#34e7cf"]}>graph honest</AuroraText>.
+          <AuroraText colors={["#34e7cf", "#5bd1ff", "#34e7cf"]}>privately</AuroraText>.
         </motion.h1>
         <motion.p variants={item}>
-          Three privacy primitives that protect users without pooling funds or
-          severing who-paid-whom. Every shield keeps a disclosure path.
+          Share one link and receive to a fresh, unlinkable address every time. Your
+          main wallet never shows up on-chain — and nobody but you can see or spend it.
+          No mixer, no custody.
         </motion.p>
         <motion.div className="cta-row centered" variants={item}>
-          <button className="act" onClick={onEnter}>Enter the toolkit →</button>
-          <a className="act ghost" href="https://github.com/romeoscript/soteria" target="_blank" rel="noreferrer">
-            View source
+          <button className="act" onClick={onPay}>Create your payment link →</button>
+          <button className="act ghost" onClick={onPay}>Pay someone</button>
+        </motion.div>
+        <motion.div className="dev-note" variants={item}>
+          Building an app? Soteria's privacy primitives — stealth payments, ZK
+          disclosure, confidential amounts — ship as an{" "}
+          <button className="link-inline" onClick={onEnter}>open SDK</button>
+          {" · "}
+          <a href="https://github.com/romeoscript/soteria" target="_blank" rel="noreferrer">
+            view source
           </a>
         </motion.div>
       </motion.div>

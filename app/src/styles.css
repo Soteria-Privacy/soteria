@@ -380,3 +380,14 @@ a.act { text-decoration: none; display: inline-flex; align-items: center; }
 .payrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; }
 .payrow + .payrow { border-top: 1px solid var(--line); }
 .payrow .mini, .payrow .ok { margin-left: auto; }
+
+/* ── landing developer note ───────────────────────────────────────── */
+.dev-note {
+  margin-top: 22px; font-size: 13px; color: var(--muted); line-height: 1.7;
+  max-width: 52ch;
+}
+.dev-note a, .link-inline {
+  color: var(--honest); text-decoration: none; background: none; border: none;
+  font: inherit; cursor: pointer; padding: 0;
+}
+.dev-note a:hover, .link-inline:hover { text-decoration: underline; }

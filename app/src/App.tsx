@@ -67,7 +67,7 @@ export default function App() {
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.4 }}
             >
-              <Landing onEnter={() => setView("app")} />
+              <Landing onPay={() => setView("pay")} onEnter={() => setView("app")} />
             </motion.div>
           ) : view === "pay" ? (
             <motion.div
