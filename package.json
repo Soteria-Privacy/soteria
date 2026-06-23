@@ -13,6 +13,9 @@
     "anchor:build": "anchor build",
     "anchor:test": "anchor test"
   },
+  "overrides": {
+    "@solana/kit": "6.10.0"
+  },
   "devDependencies": {
     "@coral-xyz/anchor": "0.30.1",
     "@types/bn.js": "^5.1.5",

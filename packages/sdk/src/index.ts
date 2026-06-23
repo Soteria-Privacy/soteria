@@ -6,7 +6,7 @@
  *   stealth      One-time receive addresses so a main wallet isn't exposed.
  *                (mainnet-ready)
  *   confidential Token-2022 confidential amounts with an auditor key.
- *                (localnet today; mainnet gated on the ZK ElGamal program)
+ *                (verified end-to-end on devnet via ConfidentialClient)
  *
  * No module pools funds or breaks the sender->recipient link. Every privacy
  * feature keeps a disclosure/audit path.
