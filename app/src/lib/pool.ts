@@ -29,6 +29,21 @@ export async function fetchPool(poolId: number): Promise<PoolState> {
   return res.json();
 }
 
+// ── Claim links: wrap a note so the deposit IS the payment ──
+
+/** Shareable link carrying a note; the recipient opens it and claims. */
+export function claimLink(note: Note): string {
+  const base = typeof location !== "undefined" ? location.origin + location.pathname : "";
+  return `${base}?claim=${encodeURIComponent(pool.encodeNote(note))}#claim`;
+}
+
+/** Accept either a full claim link or a bare note string, return the note string. */
+export function extractClaimCode(input: string): string {
+  const s = input.trim();
+  const m = s.match(/[?&]claim=([^&#\s]+)/);
+  return m ? decodeURIComponent(m[1]) : s;
+}
+
 /**
  * Deposit one denomination into a pool. Builds a fresh note, sends the deposit
  * transaction from the user's wallet, then records the commitment with the
@@ -83,7 +98,7 @@ export async function withdraw(opts: {
   recipient: PublicKey;
   fee: bigint;
 }): Promise<{ signature: string }> {
-  const note = pool.decodeNote(opts.backup);
+  const note = pool.decodeNote(extractClaimCode(opts.backup));
   const poolId = Number(note.poolId);
   const state = await fetchPool(poolId);
 

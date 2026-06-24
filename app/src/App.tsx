@@ -15,7 +15,8 @@ function initialView(): View {
   const params = new URLSearchParams(location.search);
   if (params.get("pay") !== null || location.hash === "#pay") return "pay";
   if (location.hash === "#history") return "history";
-  if (location.hash === "#pool") return "pool";
+  if (params.get("claim") !== null || location.hash === "#pool" || location.hash === "#claim")
+    return "pool";
   if (location.hash === "#app") return "app";
   return "landing";
 }
