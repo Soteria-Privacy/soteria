@@ -13,3 +13,6 @@ node_modules/
 target/
 test-ledger/
 verification_key.json
+# Tor onion service state — contains the onion private key + hostname.
+deploy/tor/hs/
+deploy/tor/data/

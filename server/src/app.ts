@@ -24,17 +24,44 @@ export interface AppDeps {
 export function createApp(deps: AppDeps): Express {
   const app = express();
 
-  app.set("trust proxy", 1);
+  // Behind a Tor onion there is no real client IP and forwarded headers are
+  // attacker-controlled, so by default we don't trust them.
+  app.set("trust proxy", config.TRUST_PROXY);
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigins }));
   app.use(express.json({ limit: "1mb" }));
-  app.use(pinoHttp({ logger }));
+
+  // Request logging with no client-identifying metadata: a request serializer
+  // that emits only method + url (no remoteAddress, no headers), and request
+  // ids generated server-side so a client can't supply a correlatable one.
+  let reqCounter = 0;
+  app.use(
+    pinoHttp({
+      logger,
+      genReqId: () => `r${(reqCounter = (reqCounter + 1) >>> 0)}`,
+      serializers: config.LOG_IP
+        ? undefined
+        : {
+            req: (req: { method?: string; url?: string }) => ({
+              method: req.method,
+              url: req.url,
+            }),
+          },
+    })
+  );
+
   app.use(
     rateLimit({
       windowMs: config.RATE_LIMIT_WINDOW_MS,
       max: config.RATE_LIMIT_MAX,
       standardHeaders: true,
       legacyHeaders: false,
+      // Over Tor every request arrives from 127.0.0.1, so per-IP limiting is
+      // meaningless and would also mean reading a client IP. Use one shared
+      // bucket; rely on the onion service's proof-of-work for DoS defense
+      // (HiddenServicePoWDefensesEnabled in deploy/tor/torrc).
+      keyGenerator: config.LOG_IP ? undefined : () => "shared",
+      validate: config.LOG_IP ? undefined : { trustProxy: false, xForwardedForHeader: false },
     })
   );
 

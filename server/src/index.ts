@@ -6,8 +6,10 @@ import { closePool } from "./db/client.js";
 
 const app = createApp(buildDeps());
 
-const server = app.listen(config.PORT, () => {
-  logger.info(`soteria server listening on http://localhost:${config.PORT}`);
+// Bind to HOST (127.0.0.1 by default) so the service is reachable only via the
+// Tor onion, never directly from the public internet.
+const server = app.listen(config.PORT, config.HOST, () => {
+  logger.info(`soteria server listening on http://${config.HOST}:${config.PORT}`);
 });
 
 async function shutdown(signal: string) {

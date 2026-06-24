@@ -1,0 +1,23 @@
+# Soteria onion service.
+#
+# Routes all inbound traffic over Tor so the server never sees a client IP or
+# TLS SNI — the relayer/operator can't log, subpoena, or correlate network
+# metadata it never receives. Launch with: bash scripts/onion.sh
+#
+# Paths are relative to the repo root (scripts/onion.sh sets the cwd).
+
+DataDirectory ./deploy/tor/data
+# This node only *serves* an onion; it is not a SOCKS proxy for outbound traffic.
+SocksPort 0
+
+# Map onion:80 -> the locally-bound API (server HOST:PORT, default 127.0.0.1:8787).
+HiddenServiceDir ./deploy/tor/hs
+HiddenServicePort 80 127.0.0.1:8787
+
+# v3 onions only (default in modern Tor, set explicitly for clarity).
+HiddenServiceVersion 3
+
+# DoS defense. Per-IP rate limiting is impossible over Tor (every request looks
+# like it comes from 127.0.0.1), so we make clients solve a proof-of-work puzzle
+# when the service is under load instead. This replaces the IP-based limiter.
+HiddenServicePoWDefensesEnabled 1

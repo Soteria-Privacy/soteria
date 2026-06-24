@@ -86,6 +86,42 @@ curl -X POST localhost:8787/groups -H "x-api-key: $ADMIN_API_KEY" \
 | POST | `/groups` | api key + authority | create on-chain group, link a set |
 | POST | `/sets/:id/publish` | api key + authority | publish current root on-chain |
 | POST | `/relay/verify` | – (needs relayer) | format + submit `verify_proof` |
+| POST | `/pools` | api key + authority | create on-chain pool |
+| GET | `/pools/:id` | – | pool tree state (build a withdraw witness) |
+| POST | `/pools/:id/commitments` | – | mirror a deposited commitment into the tree |
+| POST | `/pools/:id/publish` | api key + authority | publish the deposit root on-chain |
+| POST | `/pools/:id/association` | api key + authority | set the association root on-chain |
+| POST | `/pools/:id/withdraw` | – (needs relayer) | relay a withdrawal proof |
 
 Admin routes require `x-api-key: $ADMIN_API_KEY`. On-chain routes return `503`
 until the relevant keypair is configured.
+
+## Network privacy (Tor)
+
+On-chain unlinkability is worthless if the relayer/operator can log the IP that
+submitted a withdrawal. This service is built to run behind a **Tor onion** so it
+never receives a client IP in the first place:
+
+- **No IP logging.** With `LOG_IP=false` (default) the request logger emits only
+  `method` + `url`; `remoteAddress`, `X-Forwarded-For`, `X-Real-IP`, cookies and
+  auth headers are stripped/redacted (`logger.ts`, `app.ts`). Request ids are
+  generated server-side so a client can't supply a correlatable one.
+- **No trusted proxy headers.** `TRUST_PROXY=false` means Express ignores
+  `X-Forwarded-*`, which over Tor are attacker-controlled.
+- **Localhost bind.** `HOST=127.0.0.1` keeps the API off the public internet; the
+  only way in is the onion.
+- **PoW instead of per-IP limits.** Over Tor every request looks like `127.0.0.1`,
+  so the rate limiter uses one shared bucket and DoS defense is delegated to the
+  onion service's proof-of-work (`HiddenServicePoWDefensesEnabled`).
+
+```bash
+npm -w server run dev          # API on 127.0.0.1:8787
+bash scripts/onion.sh          # prints the .onion address
+
+# point the frontend at it (ideally itself loaded over Tor):
+#   VITE_SOTERIA_SERVER=http://<addr>.onion
+```
+
+The onion private key + hostname live in `deploy/tor/hs/` (gitignored). Set
+`LOG_IP=true` / `TRUST_PROXY=true` only if you instead front the service with a
+reverse proxy you control and accept logging client IPs.

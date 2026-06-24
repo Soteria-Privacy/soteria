@@ -1,8 +1,17 @@
 import "dotenv/config";
 import { z } from "zod";
 
+// z.coerce.boolean treats any non-empty string (incl. "false") as true, so parse
+// env booleans explicitly.
+const envBool = (def: boolean) =>
+  z.preprocess(
+    (v) => (v === undefined ? def : v === "true" || v === "1"),
+    z.boolean()
+  );
+
 const schema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  HOST: z.string().default("127.0.0.1"),
   PORT: z.coerce.number().int().positive().default(8787),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
@@ -14,6 +23,12 @@ const schema = z.object({
   ADMIN_API_KEY: z.string().min(16).optional(),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+
+  // Network-metadata privacy. Defaults assume the service runs behind a Tor
+  // onion (see scripts/onion.sh): there is no meaningful client IP, so we never
+  // log one and never trust forwarded headers.
+  LOG_IP: envBool(false),
+  TRUST_PROXY: envBool(false),
 
   SOLANA_RPC_URL: z.string().url().default("https://api.devnet.solana.com"),
   SOTERIA_PROGRAM_ID: z
