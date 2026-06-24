@@ -52,17 +52,26 @@ export default function App() {
             </div>
           </button>
           <nav className="bar-right">
-            {view !== "pay" && (
-              <button className="nav-link" onClick={() => setView("pay")}>payments</button>
-            )}
-            {view !== "pool" && (
-              <button className="nav-link" onClick={() => setView("pool")}>pool</button>
-            )}
-            {view !== "history" && (
-              <button className="nav-link" onClick={() => setView("history")}>history</button>
-            )}
+            <button
+              className={`nav-link ${view === "pay" ? "is-active" : ""}`}
+              onClick={() => setView("pay")}
+            >
+              payments
+            </button>
+            <button
+              className={`nav-link ${view === "pool" ? "is-active" : ""}`}
+              onClick={() => setView("pool")}
+            >
+              private pool
+            </button>
+            <button
+              className={`nav-link ${view === "history" ? "is-active" : ""}`}
+              onClick={() => setView("history")}
+            >
+              history
+            </button>
             {view !== "landing" && (
-              <button className="nav-link" onClick={() => setView("landing")}>← home</button>
+              <button className="nav-link" onClick={() => setView("landing")}>home</button>
             )}
             <span className="tag pill">devnet</span>
             <WalletMultiButton />

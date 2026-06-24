@@ -8,9 +8,15 @@ import {
   withdraw,
   fetchPool,
   claimLink,
+  encryptedClaimLink,
+  extractClaimCode,
+  isEncryptedCode,
+  decryptClaim,
+  deriveReceiveIdentity,
   SAFE_ANONYMITY_SET,
   type PoolState,
   type Note,
+  type ReceiveIdentity,
 } from "../lib/pool";
 import { short } from "../lib/soteria";
 
@@ -27,7 +33,7 @@ const initialClaim = () => {
 
 export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, sendTransaction, signMessage } = useWallet();
   const claimFromUrl = initialClaim();
   const [mode, setMode] = useState<Mode>(initialMode ?? (claimFromUrl ? "claim" : "pay"));
 
@@ -35,21 +41,23 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
   const [error, setError] = useState<string | null>(null);
 
   // pay
+  const [recipientAddr, setRecipientAddr] = useState("");
   const [link, setLink] = useState<string | null>(null);
-  const [note, setNote] = useState<Note | null>(null);
+  const [linkEncrypted, setLinkEncrypted] = useState(false);
   const [depositSig, setDepositSig] = useState<string | null>(null);
 
   // claim
   const [noteInput, setNoteInput] = useState(claimFromUrl);
   const [recipient, setRecipient] = useState("");
   const [withdrawSig, setWithdrawSig] = useState<string | null>(null);
+  const [identity, setIdentity] = useState<ReceiveIdentity | null>(null);
 
   const [poolState, setPoolState] = useState<PoolState | null>(null);
   useEffect(() => {
     let alive = true;
     const load = () => fetchPool(POOL_ID).then((s) => alive && setPoolState(s)).catch(() => {});
     load();
-    const t = setInterval(load, 5000); // keep the anonymity-set count fresh
+    const t = setInterval(load, 5000);
     return () => {
       alive = false;
       clearInterval(t);
@@ -66,6 +74,25 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
         ? "DANGER: only one deposit — a claim links straight back to the sender"
         : "weak: small crowd, wait for more deposits before claiming";
 
+  const claimCode = noteInput ? extractClaimCode(noteInput) : "";
+  const needsDecrypt = claimCode ? isEncryptedCode(claimCode) : false;
+
+  async function reveal() {
+    if (!signMessage) {
+      setError("this wallet doesn't support message signing");
+      return null;
+    }
+    setError(null);
+    try {
+      const id = await deriveReceiveIdentity(signMessage);
+      setIdentity(id);
+      return id;
+    } catch (e) {
+      setError((e as Error).message);
+      return null;
+    }
+  }
+
   async function onPay() {
     if (!publicKey) return;
     setBusy(true);
@@ -74,8 +101,14 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
     setDepositSig(null);
     try {
       const r = await deposit({ connection, depositor: publicKey, sendTransaction, poolId: POOL_ID });
-      setNote(r.note);
-      setLink(claimLink(r.note));
+      const addr = recipientAddr.trim();
+      if (addr) {
+        setLink(await encryptedClaimLink(r.note, addr));
+        setLinkEncrypted(true);
+      } else {
+        setLink(claimLink(r.note));
+        setLinkEncrypted(false);
+      }
       setDepositSig(r.signature);
     } catch (e) {
       setError((e as Error).message);
@@ -96,11 +129,19 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
     setError(null);
     setWithdrawSig(null);
     try {
+      let noteStr = claimCode;
+      if (needsDecrypt) {
+        const id = identity ?? (await reveal());
+        if (!id) return;
+        noteStr = await decryptClaim(claimCode, id.priv);
+      }
       const recip = new PublicKey(recipient.trim());
-      const r = await withdraw({ backup: noteInput.trim(), recipient: recip, fee: DEFAULT_FEE });
+      const r = await withdraw({ backup: noteStr, recipient: recip, fee: DEFAULT_FEE });
       setWithdrawSig(r.signature);
     } catch (e) {
-      setError((e as Error).message);
+      setError((e as Error).message.includes("operation-specific reason")
+        ? "could not decrypt — this note isn't encrypted to your address"
+        : (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -110,10 +151,10 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
     <div className="panel">
       <h3>Private payments (pool)</h3>
       <p className="sub">
-        Pay someone privately: you deposit a fixed amount and get a <strong>claim link</strong>
-        to send them. They claim it to a <strong>fresh</strong> address with a zero-knowledge
-        proof, so no one can link your payment to their wallet. Keep the link yourself to move
-        your own funds anonymously.
+        Pay someone privately: you deposit a fixed amount and get a <strong>claim link</strong>.
+        Add their private-payment address and the link is <strong>encrypted to them</strong> —
+        safe to send over any channel. They claim it to a <strong>fresh</strong> address with a
+        zero-knowledge proof, so no one can link your payment to their wallet.
       </p>
       <span className="status">
         pool #{POOL_ID}
@@ -131,6 +172,14 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
 
       {mode === "pay" ? (
         <div style={{ marginTop: 18 }}>
+          <label className="k">Recipient's private-payment address (optional)</label>
+          <input
+            className="input"
+            value={recipientAddr}
+            placeholder="leave blank for a bearer link (share privately)"
+            style={{ width: "100%", marginBottom: 12, fontFamily: "monospace" }}
+            onChange={(e) => setRecipientAddr(e.target.value)}
+          />
           {!publicKey ? (
             <WalletMultiButton />
           ) : (
@@ -141,8 +190,11 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
 
           {link && (
             <div className="readout" style={{ marginTop: 16 }}>
-              <div style={{ color: "#34e7cf", marginBottom: 10 }}>
-                ✓ Deposited. Send this claim link to the recipient.
+              <div style={{ color: "#34e7cf", marginBottom: 4 }}>✓ Deposited.</div>
+              <div className="sub" style={{ marginBottom: 10 }}>
+                {linkEncrypted
+                  ? "🔒 Encrypted to the recipient — safe to send over any channel."
+                  : "⚠ Bearer link — anyone with it can claim. Share privately."}
               </div>
               <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
                 <div style={{ background: "#fff", padding: 10, borderRadius: 8 }}>
@@ -157,15 +209,6 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
                 style={{ width: "100%", fontFamily: "monospace" }}
                 onFocus={(e) => e.currentTarget.select()}
               />
-              <div style={{ color: "#ffb454", margin: "10px 0 4px" }}>
-                ⚠ Anyone with this link can claim the funds — share it privately. Lose it and the
-                funds are unrecoverable.
-              </div>
-              {note && (
-                <div className="sub">
-                  Raw note: <span style={{ fontFamily: "monospace" }}>{short(noteBackup(note), 10)}</span>
-                </div>
-              )}
               {depositSig && (
                 <div style={{ marginTop: 8 }}>
                   <span className="k">deposit tx </span>
@@ -184,15 +227,44 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
             <div className="sub" style={{ marginTop: 4 }}>{anonLabel}</div>
           </div>
 
+          {/* Your receive address — share it so senders can encrypt to you. */}
+          <div className="readout" style={{ marginBottom: 14 }}>
+            {identity ? (
+              <>
+                <div className="k" style={{ marginBottom: 6 }}>Your private-payment address</div>
+                <textarea
+                  className="input"
+                  readOnly
+                  value={identity.address}
+                  rows={2}
+                  style={{ width: "100%", fontFamily: "monospace" }}
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+                <div className="sub" style={{ marginTop: 6 }}>
+                  Share this with senders so they can encrypt payments to you.
+                </div>
+              </>
+            ) : (
+              <button className="act ghost" onClick={reveal} disabled={!signMessage}>
+                Reveal my private-payment address
+              </button>
+            )}
+          </div>
+
           <label className="k">Claim link or note</label>
           <textarea
             className="input"
             value={noteInput}
-            placeholder="paste the claim link you received, or a soteria-note-v1:… string"
+            placeholder="paste the claim link you received"
             rows={3}
-            style={{ width: "100%", fontFamily: "monospace", marginBottom: 12 }}
+            style={{ width: "100%", fontFamily: "monospace", marginBottom: 6 }}
             onChange={(e) => setNoteInput(e.target.value)}
           />
+          {needsDecrypt && (
+            <div className="sub" style={{ marginBottom: 12, color: "#b07cff" }}>
+              🔒 Encrypted note — you'll be asked to sign to decrypt it with your address.
+            </div>
+          )}
           <label className="k">Receive at (fresh address)</label>
           <input
             className="input"
@@ -231,9 +303,4 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
       )}
     </div>
   );
-}
-
-// Render a short preview of the bearer note without re-importing the SDK here.
-function noteBackup(note: Note): string {
-  return `soteria-note-v1:${note.poolId}:${note.nullifier.toString(16)}:${note.secret.toString(16)}`;
 }

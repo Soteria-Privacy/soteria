@@ -31,18 +31,55 @@ export async function fetchPool(poolId: number): Promise<PoolState> {
 
 // ── Claim links: wrap a note so the deposit IS the payment ──
 
-/** Shareable link carrying a note; the recipient opens it and claims. */
-export function claimLink(note: Note): string {
+function linkFromCode(code: string): string {
   const base = typeof location !== "undefined" ? location.origin + location.pathname : "";
-  return `${base}?claim=${encodeURIComponent(pool.encodeNote(note))}#claim`;
+  return `${base}?claim=${encodeURIComponent(code)}#claim`;
 }
 
-/** Accept either a full claim link or a bare note string, return the note string. */
+/** Plaintext (bearer) claim link — anyone with the link can claim. */
+export function claimLink(note: Note): string {
+  return linkFromCode(pool.encodeNote(note));
+}
+
+/** Encrypted claim link — only the holder of `recipientAddress` can claim, so
+ *  the link is safe to send over a public channel. */
+export async function encryptedClaimLink(note: Note, recipientAddress: string): Promise<string> {
+  const blob = await pool.encryptNote(pool.encodeNote(note), pool.decodeReceiveAddress(recipientAddress));
+  return linkFromCode(blob);
+}
+
+/** Accept either a full claim link or a bare note/blob string. */
 export function extractClaimCode(input: string): string {
   const s = input.trim();
   const m = s.match(/[?&]claim=([^&#\s]+)/);
   return m ? decodeURIComponent(m[1]) : s;
 }
+
+export const isEncryptedCode = (code: string): boolean => pool.isEncryptedNote(code);
+
+// ── Receive identity: a recipient's private-payment address, derived from a
+//    wallet signature so it's recoverable and never stored. ──
+
+export const RECEIVE_DERIVE_MESSAGE = new TextEncoder().encode(
+  "Soteria private payments\n\nSign to derive your private-payment receiving key. " +
+    "This signature never leaves your device."
+);
+
+export interface ReceiveIdentity {
+  address: string;
+  priv: Uint8Array;
+}
+
+export async function deriveReceiveIdentity(
+  signMessage: (m: Uint8Array) => Promise<Uint8Array>
+): Promise<ReceiveIdentity> {
+  const sig = await signMessage(RECEIVE_DERIVE_MESSAGE);
+  const kp = pool.receiveKeypairFromSeed(sig);
+  return { address: pool.encodeReceiveAddress(kp.pub), priv: kp.priv };
+}
+
+export const decryptClaim = (code: string, priv: Uint8Array): Promise<string> =>
+  pool.decryptNote(code, priv);
 
 /**
  * Deposit one denomination into a pool. Builds a fresh note, sends the deposit
