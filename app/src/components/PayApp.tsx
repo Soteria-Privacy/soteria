@@ -7,13 +7,16 @@ import {
   decodeMeta,
   payLink,
   sendPrivate,
-  scanPayments,
-  sweep,
   fmtSol,
   type StealthKeys,
-  type DetectedPayment,
 } from "../lib/stealthPay";
-import { stealth, short } from "../lib/soteria";
+import { stealth, short, RPC_URL } from "../lib/soteria";
+import {
+  saveIdentity,
+  loadIdentity,
+  clearIdentity,
+  putActivity,
+} from "../lib/payStore";
 
 type Mode = "receive" | "send";
 
@@ -21,7 +24,8 @@ const payParam = () =>
   typeof location !== "undefined" ? new URLSearchParams(location.search).get("pay") : null;
 
 type FeedItem = {
-  payment: DetectedPayment;
+  address: string;
+  lamports: number;
   status: "received" | "sweeping" | "swept" | "failed";
   sig?: string;
   error?: string;
@@ -55,20 +59,15 @@ export function PayApp() {
 }
 
 function Receive() {
-  const { connection } = useConnection();
   const { publicKey, signMessage } = useWallet();
-  const [keys, setKeys] = useState<StealthKeys | null>(null);
+  const [keys, setKeys] = useState<StealthKeys | null>(() => loadIdentity());
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [autoSweep, setAutoSweep] = useState(true);
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [watching, setWatching] = useState(false);
-
-  const autoSweepRef = useRef(autoSweep);
-  autoSweepRef.current = autoSweep;
-  const seen = useRef<Set<string>>(new Set());
-  const inFlight = useRef<Set<string>>(new Set());
+  const workerRef = useRef<Worker | null>(null);
 
   const link = useMemo(() => (keys ? payLink(keys.meta) : ""), [keys]);
 
@@ -81,7 +80,9 @@ function Receive() {
     try {
       setBusy("Sign in your wallet to derive your keys…");
       const signature = await signMessage(DERIVE_MESSAGE);
-      setKeys(stealth.deriveStealthKeys(signature));
+      const k = stealth.deriveStealthKeys(signature);
+      saveIdentity(k);
+      setKeys(k);
     } catch (e) {
       setError(e instanceof Error ? e.message : "could not derive keys");
     } finally {
@@ -89,62 +90,61 @@ function Receive() {
     }
   }
 
-  const patch = (address: string, p: Partial<FeedItem>) =>
-    setFeed((f) => f.map((it) => (it.payment.address === address ? { ...it, ...p } : it)));
-
-  async function sweepOne(payment: DetectedPayment) {
-    if (!publicKey || inFlight.current.has(payment.address)) return;
-    inFlight.current.add(payment.address);
-    patch(payment.address, { status: "sweeping", error: undefined });
-    try {
-      const sig = await sweep({ connection, payment, destination: publicKey });
-      patch(payment.address, { status: "swept", sig });
-    } catch (e) {
-      patch(payment.address, {
-        status: "failed",
-        error: e instanceof Error ? e.message : "sweep failed",
-      });
-    } finally {
-      inFlight.current.delete(payment.address);
-    }
+  function forget() {
+    clearIdentity();
+    setKeys(null);
+    setFeed([]);
   }
 
-  // Live: watch the registry and sweep payments the moment they land.
+  const upsert = (address: string, patch: Partial<FeedItem>) =>
+    setFeed((f) => {
+      const i = f.findIndex((x) => x.address === address);
+      if (i < 0) return [{ address, lamports: 0, status: "received", ...patch }, ...f];
+      const next = [...f];
+      next[i] = { ...next[i], ...patch };
+      return next;
+    });
+
+  // Background worker: scans the registry and auto-sweeps off the UI thread.
   useEffect(() => {
     if (!keys || !publicKey) return;
-    let alive = true;
+    const worker = new Worker(new URL("../lib/sweeper.worker.ts", import.meta.url), {
+      type: "module",
+    });
+    workerRef.current = worker;
     setWatching(true);
-    const tick = async () => {
-      let found;
-      try {
-        found = await scanPayments({ connection, keys });
-      } catch {
-        return; // transient RPC/registry blip — the next tick retries
-      }
-      if (!alive) return;
-      for (const p of found) {
-        if (seen.current.has(p.address)) continue;
-        seen.current.add(p.address);
-        setFeed((f) => [
-          { payment: p, status: autoSweepRef.current ? "sweeping" : "received" },
-          ...f,
-        ]);
-        if (autoSweepRef.current) sweepOne(p);
+    worker.onmessage = (e: MessageEvent) => {
+      const m = e.data;
+      if (m.type === "ready") {
+        // Only send config once the worker signals it's ready, to avoid a
+        // module-worker startup race where the first message is dropped.
+        worker.postMessage({
+          type: "start", rpcUrl: RPC_URL, keys, destination: publicKey.toBase58(), autoSweep,
+        });
+      } else if (m.type === "detected") {
+        const status = autoSweep ? "sweeping" : "received";
+        upsert(m.address, { lamports: m.lamports, status });
+        putActivity({
+          id: m.address, kind: "received", lamports: m.lamports, address: m.address,
+          status, ts: Date.now(),
+        });
+      } else if (m.type === "status") {
+        upsert(m.address, { status: m.status, sig: m.sig, error: m.error });
+        putActivity({ id: m.address, kind: "received", status: m.status, sig: m.sig, ts: Date.now() });
       }
     };
-    tick();
-    const id = setInterval(tick, 9000);
     return () => {
-      alive = false;
-      clearInterval(id);
+      worker.postMessage({ type: "stop" });
+      worker.terminate();
+      workerRef.current = null;
       setWatching(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keys, publicKey, connection]);
+  }, [keys, publicKey]);
 
   function enableAutoSweep(on: boolean) {
     setAutoSweep(on);
-    if (on) feed.forEach((it) => it.status === "received" && sweepOne(it.payment));
+    workerRef.current?.postMessage({ type: "setAutoSweep", value: on });
   }
 
   if (!publicKey) {
@@ -163,7 +163,8 @@ function Receive() {
           <h3>Your payment link</h3>
           <p className="sub">
             One signature derives your private receiving keys. They're recoverable from
-            your wallet anytime — nothing is stored.
+            your wallet anytime, and this device remembers them so payments keep
+            arriving automatically.
           </p>
           <div className="row">
             <button className="act" onClick={createIdentity} disabled={!!busy}>
@@ -173,7 +174,10 @@ function Receive() {
         </>
       ) : (
         <>
-          <h3>Your payment link</h3>
+          <div className="panel-head">
+            <h3>Your payment link</h3>
+            <button className="link-inline" onClick={forget}>forget on this device</button>
+          </div>
           <div className="qr-wrap">
             <div className="qr"><QRCodeSVG value={link} size={148} bgColor="transparent" fgColor="#cdeee7" /></div>
             <div className="qr-side">
@@ -210,12 +214,12 @@ function Receive() {
               <div><span className="k">incoming </span>nothing yet — share your link to get paid</div>
             ) : (
               feed.map((it) => (
-                <div key={it.payment.address} className="payrow">
-                  <span className="shielded">{fmtSol(it.payment.lamports)} SOL</span>
-                  <span className="k"> · {short(it.payment.address)}</span>
+                <div key={it.address} className="payrow">
+                  <span className="shielded">{it.lamports ? fmtSol(it.lamports) + " SOL" : "payment"}</span>
+                  <span className="k"> · {short(it.address)}</span>
                   <span className="pay-status">
                     {it.status === "received" && (
-                      <button className="mini" onClick={() => sweepOne(it.payment)}>sweep</button>
+                      <button className="mini" onClick={() => workerRef.current?.postMessage({ type: "sweepOne", address: it.address })}>sweep</button>
                     )}
                     {it.status === "sweeping" && <span className="k">arriving…</span>}
                     {it.status === "swept" && (
@@ -226,7 +230,7 @@ function Receive() {
                       >arrived ↗</a>
                     )}
                     {it.status === "failed" && (
-                      <button className="mini" onClick={() => sweepOne(it.payment)} title={it.error}>retry</button>
+                      <button className="mini" onClick={() => workerRef.current?.postMessage({ type: "sweepOne", address: it.address })} title={it.error}>retry</button>
                     )}
                   </span>
                 </div>
@@ -237,10 +241,10 @@ function Receive() {
       )}
       {error && <div className="readout" style={{ marginTop: 10 }}><span className="k">error </span>{error}</div>}
       <p className="hint">
-        Each payment lands at a fresh one-time address only you can detect. With
-        auto-sweep on, funds move to your wallet the moment they arrive — no action
-        needed while this page is open. Turn it off to keep funds at their one-time
-        addresses for stronger privacy and sweep on your own schedule.
+        A background worker watches for payments and auto-sweeps them to your wallet
+        the moment they land — no action needed while Soteria is open in any tab. This
+        device remembers your keys so it resumes instantly. Turn off auto-sweep to keep
+        funds at their one-time addresses for stronger privacy.
       </p>
     </div>
   );
@@ -271,6 +275,10 @@ function Send() {
         meta, sol: amount,
       });
       setResult(r);
+      putActivity({
+        id: r.signature, kind: "sent", lamports: Math.round(amount * 1e9),
+        address: r.stealthAddress, status: "sent", sig: r.signature, ts: Date.now(),
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "payment failed");
     } finally {

@@ -16,4 +16,14 @@ export default defineConfig({
     topLevelAwait(),
     nodePolyfills({ globals: { Buffer: true, global: true, process: true } }),
   ],
+  // The background sweeper runs as a module worker and transitively loads the
+  // zk-sdk wasm, so the worker bundle needs the same wasm handling.
+  worker: {
+    format: "es",
+    plugins: () => [
+      wasm(),
+      topLevelAwait(),
+      nodePolyfills({ globals: { Buffer: true, global: true, process: true } }),
+    ],
+  },
 });

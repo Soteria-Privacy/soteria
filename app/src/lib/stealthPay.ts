@@ -146,7 +146,17 @@ export async function sweep(opts: {
   tx.addSignature(stealthAddress, Buffer.from(sig));
 
   const signature = await connection.sendRawTransaction(tx.serialize());
-  await connection.confirmTransaction(signature, "confirmed");
+  // Poll status rather than confirmTransaction() — the latter relies on a
+  // websocket that is unreliable in a worker and on public devnet.
+  for (let i = 0; i < 40; i++) {
+    const { value } = await connection.getSignatureStatuses([signature]);
+    const st = value[0];
+    if (st?.err) throw new Error(`sweep failed: ${JSON.stringify(st.err)}`);
+    if (st && (st.confirmationStatus === "confirmed" || st.confirmationStatus === "finalized")) {
+      return signature;
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
   return signature;
 }
 

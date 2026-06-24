@@ -476,3 +476,34 @@ a.act { text-decoration: none; display: inline-flex; align-items: center; }
 .toggle input { accent-color: var(--honest); width: 15px; height: 15px; cursor: pointer; }
 .feed { margin-top: 12px; }
 .feed .pay-status { margin-left: auto; display: inline-flex; align-items: center; }
+
+/* ── payment history ──────────────────────────────────────────────── */
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.hist-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.hist-stat { display: flex; flex-direction: column; }
+.hist-stat-n { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; color: var(--honest); }
+.hist-stat-l { font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.hist-empty { text-align: center; padding: 26px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.hist-list { display: flex; flex-direction: column; }
+.hist-row {
+  display: grid; grid-template-columns: 22px 1fr 1.1fr 0.9fr auto 18px;
+  align-items: center; gap: 12px; padding: 13px 4px; border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.hist-row:first-child { border-top: none; }
+.hist-row .dir { font-size: 15px; text-align: center; }
+.hist-row .dir.received { color: var(--honest); }
+.hist-row .dir.sent { color: var(--muted); }
+.hist-row .amt { font-weight: 600; letter-spacing: -0.01em; }
+.hist-row .amt em { font-style: normal; font-weight: 400; font-size: 11px; color: var(--muted); }
+.hist-row .addr { font-family: var(--mono); font-size: 12px; }
+.hist-row .st { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.hist-row .st.ok { color: var(--honest); }
+.hist-row .st.bad { color: var(--magenta); }
+.hist-row .t { font-family: var(--mono); font-size: 11.5px; text-align: right; }
+.hist-row .lnk { color: var(--honest); text-decoration: none; text-align: center; }
+.hist-row a.lnk:hover { text-decoration: underline; }
+@media (max-width: 620px) {
+  .hist-row { grid-template-columns: 18px 1fr auto; }
+  .hist-row .addr, .hist-row .t { display: none; }
+}

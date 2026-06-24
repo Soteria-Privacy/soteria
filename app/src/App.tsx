@@ -4,14 +4,16 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Landing } from "./components/Landing";
 import { Workspace } from "./components/Workspace";
 import { PayApp } from "./components/PayApp";
+import { History } from "./components/History";
 
-type View = "landing" | "app" | "pay";
+type View = "landing" | "app" | "pay" | "history";
 type Module = "credential" | "stealth" | "confidential";
 
 function initialView(): View {
   if (typeof location === "undefined") return "landing";
   const params = new URLSearchParams(location.search);
   if (params.get("pay") !== null || location.hash === "#pay") return "pay";
+  if (location.hash === "#history") return "history";
   if (location.hash === "#app") return "app";
   return "landing";
 }
@@ -50,6 +52,9 @@ export default function App() {
             {view !== "pay" && (
               <button className="nav-link" onClick={() => setView("pay")}>payments</button>
             )}
+            {view !== "history" && (
+              <button className="nav-link" onClick={() => setView("history")}>history</button>
+            )}
             {view !== "landing" && (
               <button className="nav-link" onClick={() => setView("landing")}>← home</button>
             )}
@@ -78,6 +83,16 @@ export default function App() {
               transition={{ duration: 0.4, ease: "easeOut" }}
             >
               <PayApp />
+            </motion.div>
+          ) : view === "history" ? (
+            <motion.div
+              key="history"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
+            >
+              <History onPay={() => setView("pay")} />
             </motion.div>
           ) : (
             <motion.div
