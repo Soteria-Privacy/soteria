@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { deposit, withdraw, fetchPool } from "../lib/pool";
+import { deposit, withdraw, fetchPool, SAFE_ANONYMITY_SET, type PoolState } from "../lib/pool";
 import { short } from "../lib/soteria";
 
 const POOL_ID = Number(import.meta.env.VITE_SOTERIA_POOL_ID ?? 0);
@@ -25,6 +25,27 @@ export function PoolPanel() {
   const [recipient, setRecipient] = useState("");
   const [withdrawSig, setWithdrawSig] = useState<string | null>(null);
 
+  const [poolState, setPoolState] = useState<PoolState | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () => fetchPool(POOL_ID).then((s) => alive && setPoolState(s)).catch(() => {});
+    load();
+    const t = setInterval(load, 5000); // keep the anonymity-set count fresh
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+
+  const anonSet = poolState?.anonymitySet ?? 0;
+  const anonColor = anonSet >= SAFE_ANONYMITY_SET ? "#34e7cf" : anonSet <= 1 ? "#ff6b6b" : "#ffb454";
+  const anonLabel =
+    anonSet >= SAFE_ANONYMITY_SET
+      ? "healthy crowd to hide in"
+      : anonSet <= 1
+        ? "DANGER: you'd be the only one — a withdrawal links straight back to you"
+        : "weak: small crowd, wait for more deposits before withdrawing";
+
   async function onDeposit() {
     if (!publicKey) return;
     setBusy(true);
@@ -45,6 +66,13 @@ export function PoolPanel() {
   }
 
   async function onWithdraw() {
+    if (anonSet < SAFE_ANONYMITY_SET) {
+      const msg =
+        anonSet <= 1
+          ? "You'd be the only deposit in this pool — withdrawing now links the funds straight back to you. Proceed anyway?"
+          : `Only ${anonSet} deposits in the pool. Your withdrawal hides in a crowd of ${anonSet}. Proceed anyway?`;
+      if (!window.confirm(msg)) return;
+    }
     setBusy(true);
     setError(null);
     setWithdrawSig(null);
@@ -113,6 +141,13 @@ export function PoolPanel() {
         </div>
       ) : (
         <div style={{ marginTop: 18 }}>
+          <div className="readout" style={{ marginBottom: 14, borderColor: anonColor }}>
+            <div style={{ color: anonColor, fontWeight: 600 }}>
+              Anonymity set: {anonSet}{poolState ? ` deposit${anonSet === 1 ? "" : "s"}` : "…"}
+            </div>
+            <div className="sub" style={{ marginTop: 4 }}>{anonLabel}</div>
+          </div>
+
           <label className="k">Your saved note</label>
           <textarea
             className="input"

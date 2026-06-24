@@ -30,6 +30,11 @@ const schema = z.object({
   LOG_IP: envBool(false),
   TRUST_PROXY: envBool(false),
 
+  // Anonymity-set floor: refuse a withdrawal until the pool holds at least this
+  // many deposits, so a user can't deanonymize themselves by withdrawing from a
+  // pool that is effectively just their own deposit. 1 = no guard (dev only).
+  POOL_MIN_ANONYMITY_SET: z.coerce.number().int().min(1).default(1),
+
   SOLANA_RPC_URL: z.string().url().default("https://api.devnet.solana.com"),
   SOTERIA_PROGRAM_ID: z
     .string()

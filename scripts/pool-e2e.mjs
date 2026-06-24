@@ -73,6 +73,11 @@ async function main() {
   await post(`/pools/${POOL_ID}/association`, {}, true); // non-gated: assoc = all deposits
   console.log("→ operator published deposit + association roots");
 
+  if (process.env.SEED_ONLY) {
+    console.log("→ SEED_ONLY: deposited, skipping withdraw");
+    process.exit(0);
+  }
+
   // ── WITHDRAW ──
   const recipient = Keypair.generate().publicKey; // fresh, never linked
   const state = await fetch(`${SERVER}/pools/${POOL_ID}`).then(j("GET pool"));

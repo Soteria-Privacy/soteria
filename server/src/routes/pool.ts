@@ -14,6 +14,7 @@ import {
 import { computeRoot } from "../services/merkle.js";
 import { formatPoolProof } from "../services/proof.js";
 import { logger } from "../logger.js";
+import { config } from "../config.js";
 
 // In-memory operator state: mirrors the on-chain deposit tree and curated
 // association set so clients can rebuild Merkle paths. v1 only — a production
@@ -101,6 +102,10 @@ export function poolRoutes({ solana }: AppDeps): Router {
         association: pool.association,
         depositRoot: pool.depositRoot,
         associationRoot: pool.associationRoot,
+        // Privacy context: how big the crowd you'd hide in is, and the floor the
+        // operator enforces before allowing a withdrawal.
+        anonymitySet: pool.deposits.length,
+        minAnonymitySet: config.POOL_MIN_ANONYMITY_SET,
       });
     })
   );
@@ -186,7 +191,18 @@ export function poolRoutes({ solana }: AppDeps): Router {
         throw new AppError(503, "relayer keypair not configured", "relay_disabled");
       }
       const id = Number(req.params.id);
-      requirePool(id);
+      const pool = requirePool(id);
+
+      // Anonymity-set guard: a withdrawal from a pool that barely has any
+      // deposits trivially links back to the depositor. Refuse below the floor.
+      if (pool.deposits.length < config.POOL_MIN_ANONYMITY_SET) {
+        throw new AppError(
+          409,
+          `anonymity set too small (${pool.deposits.length}/${config.POOL_MIN_ANONYMITY_SET}); wait for more deposits`,
+          "anonymity_set_too_small"
+        );
+      }
+
       const { recipient, fee, proof, publicSignals } = req.body;
 
       const formatted = formatPoolProof(proof, publicSignals);

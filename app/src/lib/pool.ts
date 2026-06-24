@@ -15,7 +15,13 @@ export interface PoolState {
   association: string[];
   depositRoot: string | null;
   associationRoot: string | null;
+  anonymitySet: number;
+  minAnonymitySet: number;
 }
+
+// Below this the crowd is too small to meaningfully hide in — surface a warning
+// even if the operator's hard floor is lower.
+export const SAFE_ANONYMITY_SET = 10;
 
 export async function fetchPool(poolId: number): Promise<PoolState> {
   const res = await fetch(`${SERVER}/pools/${poolId}`);
