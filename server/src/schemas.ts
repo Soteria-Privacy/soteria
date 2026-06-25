@@ -74,6 +74,47 @@ export const poolWithdrawBody = z.object({
   publicSignals: z.array(decimal).length(6),
 });
 
+// ── Hidden-amount shielded pool (Option B) ──
+
+const byteArr = (n: number) => z.array(z.number().int().min(0).max(255)).length(n);
+const bytes32Arr = byteArr(32);
+const b64ish = z.string().max(8192);
+
+export const shieldedIdParam = z.object({ id: z.coerce.number().int().nonnegative() });
+
+export const createShieldedBody = z.object({
+  shieldedId: z.coerce.number().int().nonnegative(),
+});
+
+const formattedProof = z.object({
+  proofA: byteArr(64),
+  proofB: byteArr(128),
+  proofC: byteArr(64),
+  publicInputs: z.array(bytes32Arr).length(7),
+  nullifiers: z.array(bytes32Arr).length(2),
+});
+
+const txOutputs = z.object({
+  commitments: z.array(decimal).length(2),
+  encryptedSecrets: z.array(b64ish).length(2),
+});
+
+// Deposit: the client signs + submits the transact tx; it just tells the
+// operator to mirror the outputs.
+export const shieldedDepositNotifyBody = txOutputs.extend({
+  signature: z.string().min(32).max(128),
+  nullifiers: z.array(bytes32Arr).length(2),
+});
+
+// Withdraw / internal transfer: the relayer signs.
+export const shieldedRelayBody = z.object({
+  proof: formattedProof,
+  extAmount: z.string().regex(/^-?\d+$/).max(40),
+  fee: decimal,
+  recipient: pubkey,
+  outputs: txOutputs,
+});
+
 export type AnnounceBody = z.infer<typeof announceBody>;
 export type RelayVerifyBody = z.infer<typeof relayVerifyBody>;
 export type PoolWithdrawBody = z.infer<typeof poolWithdrawBody>;

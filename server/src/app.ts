@@ -14,6 +14,7 @@ import { setRoutes } from "./routes/sets.js";
 import { groupRoutes } from "./routes/groups.js";
 import { relayRoutes } from "./routes/relay.js";
 import { poolRoutes } from "./routes/pool.js";
+import { shieldedRoutes } from "./routes/shielded.js";
 import { confidentialRoutes } from "./routes/confidential.js";
 
 export interface AppDeps {
@@ -72,6 +73,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(relayRoutes(deps));
   app.use(confidentialRoutes(deps));
   app.use(poolRoutes(deps));
+  app.use(shieldedRoutes(deps));
 
   app.use(notFound);
   app.use(errorHandler);

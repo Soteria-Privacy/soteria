@@ -262,4 +262,106 @@ export class SolanaService {
     }
     return out;
   }
+
+  // ── Hidden-amount shielded pool (Option B) ──
+
+  get relayerPubkey(): string | null {
+    return this.relayer?.publicKey.toBase58() ?? null;
+  }
+
+  shieldedPda(id: number): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("shielded"), u64le(id)],
+      this.programId
+    )[0];
+  }
+  shieldedVaultPda(id: number): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("shvault"), u64le(id)],
+      this.programId
+    )[0];
+  }
+  shieldedNullifierPda(id: number, nullifier: number[]): PublicKey {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("shnull"), this.shieldedPda(id).toBuffer(), Buffer.from(nullifier)],
+      this.programId
+    )[0];
+  }
+
+  async shieldedExists(id: number): Promise<boolean> {
+    return (await this.connection.getAccountInfo(this.shieldedPda(id))) !== null;
+  }
+
+  async initShielded(id: number): Promise<string> {
+    if (!this.authority) throw new Error("authority keypair not configured");
+    const ix = await this.program.methods
+      .initShielded(new BN(id))
+      .accounts({
+        authority: this.authority.publicKey,
+        shielded: this.shieldedPda(id),
+        vault: this.shieldedVaultPda(id),
+      })
+      .instruction();
+    return this.send([ix], this.authority);
+  }
+
+  async publishShieldedRoot(id: number, root: string): Promise<string> {
+    if (!this.authority) throw new Error("authority keypair not configured");
+    const ix = await this.program.methods
+      .publishShieldedRoot(be32(root))
+      .accounts({ authority: this.authority.publicKey, shielded: this.shieldedPda(id) })
+      .instruction();
+    return this.send([ix], this.authority);
+  }
+
+  /** Relay a `transact` (withdraw or internal transfer): the relayer signs, so
+   *  the spender's wallet never appears. The proof's extDataHash already bound
+   *  the relayer pubkey, so `recipient`/`relayer` here must match it. */
+  async relayTransact(
+    id: number,
+    p: {
+      proofA: number[];
+      proofB: number[];
+      proofC: number[];
+      publicInputs: number[][];
+      extAmount: string;
+      fee: string;
+      nullifiers: number[][];
+    },
+    recipient: PublicKey
+  ): Promise<string> {
+    if (!this.relayer) throw new Error("relayer keypair not configured");
+    const ix = await this.program.methods
+      .transact(
+        p.proofA,
+        p.proofB,
+        p.proofC,
+        p.publicInputs,
+        new BN(p.extAmount),
+        new BN(p.fee)
+      )
+      .accounts({
+        signer: this.relayer.publicKey,
+        shielded: this.shieldedPda(id),
+        vault: this.shieldedVaultPda(id),
+        recipient,
+        relayer: this.relayer.publicKey,
+        nullifier1: this.shieldedNullifierPda(id, p.nullifiers[0]),
+        nullifier2: this.shieldedNullifierPda(id, p.nullifiers[1]),
+      })
+      .instruction();
+    const cu = ComputeBudgetProgram.setComputeUnitLimit({ units: VERIFY_COMPUTE_UNITS });
+    return this.send([cu, ix], this.relayer);
+  }
+
+  /** Confirm a client-signed deposit transaction exists and hit this program. */
+  async transactionHitsProgram(signature: string): Promise<boolean> {
+    const tx = await this.connection.getTransaction(signature, {
+      maxSupportedTransactionVersion: 0,
+      commitment: "confirmed",
+    });
+    if (!tx) return false;
+    const keys = tx.transaction.message.staticAccountKeys.map((k) => k.toBase58());
+    return keys.includes(this.programId.toBase58());
+  }
 }
