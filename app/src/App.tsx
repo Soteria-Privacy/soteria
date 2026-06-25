@@ -55,28 +55,10 @@ export default function App() {
           </button>
           <nav className="bar-right">
             <button
-              className={`nav-link ${view === "pay" ? "is-active" : ""}`}
-              onClick={() => setView("pay")}
-            >
-              payments
-            </button>
-            <button
-              className={`nav-link ${view === "pool" ? "is-active" : ""}`}
-              onClick={() => setView("pool")}
-            >
-              private pool
-            </button>
-            <button
               className={`nav-link ${view === "shielded" ? "is-active" : ""}`}
               onClick={() => setView("shielded")}
             >
-              shielded
-            </button>
-            <button
-              className={`nav-link ${view === "history" ? "is-active" : ""}`}
-              onClick={() => setView("history")}
-            >
-              history
+              private pay
             </button>
             {view !== "landing" && (
               <button className="nav-link" onClick={() => setView("landing")}>home</button>
@@ -95,7 +77,7 @@ export default function App() {
               exit={{ opacity: 0, y: -16 }}
               transition={{ duration: 0.4 }}
             >
-              <Landing onPay={() => setView("pay")} onEnter={() => setView("app")} />
+              <Landing onPay={() => setView("shielded")} onEnter={() => setView("app")} />
             </motion.div>
           ) : view === "pay" ? (
             <motion.div

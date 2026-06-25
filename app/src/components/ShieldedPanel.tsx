@@ -63,13 +63,13 @@ export function ShieldedPanel() {
 
   return (
     <div className="panel">
-      <h3>Shielded payments (any amount)</h3>
+      <h3>Private payments</h3>
       <p className="sub">
-        Deposit <strong>any amount</strong> into one shielded balance. Pay anyone privately —
+        Deposit <strong>any amount</strong> into one private balance. Pay anyone privately —
         amounts are <strong>encrypted</strong>, change comes back automatically, and the chain
         never sees who paid whom or how much.
       </p>
-      <span className="status">devnet · hidden-amount pool</span>
+      <span className="status">devnet</span>
 
       {!publicKey ? (
         <div style={{ marginTop: 18 }}><WalletMultiButton /></div>

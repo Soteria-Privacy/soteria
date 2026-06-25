@@ -4,18 +4,18 @@ import { LiveGraph } from "./LiveGraph";
 const STEPS = [
   {
     n: "01",
-    t: "Share your link",
-    d: "One link, one QR. Post it anywhere — it never changes and reveals nothing.",
+    t: "Deposit any amount",
+    d: "Move any amount into one shielded balance. The chain sees a deposit — never how much you hold.",
   },
   {
     n: "02",
-    t: "Get paid privately",
-    d: "Each payment lands at a fresh address only you can find. Your wallet stays off-chain.",
+    t: "Pay anyone, privately",
+    d: "Send any amount to a shielded address. Amounts stay encrypted and your wallet is never the payer — change comes back automatically.",
   },
   {
     n: "03",
-    t: "Sweep when ready",
-    d: "Move funds to your main wallet anytime, signed with the one-time key.",
+    t: "Withdraw when ready",
+    d: "Take any amount out to a fresh wallet, with no on-chain link to where it came from.",
   },
 ];
 
@@ -52,16 +52,16 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
             <span className="accent">privately.</span>
           </motion.h1>
           <motion.p className="lp-lede" variants={item}>
-            Share one link and receive to a fresh, unlinkable address every time. Your
-            main wallet never appears on-chain, and only you can see or spend what comes
-            in — self-custodial, end to end.
+            Deposit any amount into one shielded balance and pay anyone privately.
+            Amounts stay encrypted, your wallet is never named as the payer, and the
+            chain never sees who paid whom — self-custodial, end to end.
           </motion.p>
           <motion.div className="lp-cta" variants={item}>
             <button className="act" onClick={onPay}>
-              Create your payment link
+              Open private payments
             </button>
             <button className="act ghost" onClick={onPay}>
-              Pay someone
+              Pay privately
             </button>
           </motion.div>
         </motion.div>
@@ -86,8 +86,8 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
       <div className="lp-foot">
         <div className="lp-trust">
           <span>Self-custodial</span>
-          <span>Compliant privacy pools</span>
-          <span>Auditable by design</span>
+          <span>Hidden amounts</span>
+          <span>Unlinkable payments</span>
         </div>
         <p className="lp-dev">
           Building an app? The same primitives — stealth payments, ZK disclosure,
