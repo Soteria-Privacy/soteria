@@ -51,6 +51,34 @@ export function poolRoutes({ solana }: AppDeps): Router {
   const r = Router();
   const store = new PoolStore();
 
+  // Rebuild the in-memory tree mirror from chain so the operator survives
+  // restarts and re-adopts every existing pool.
+  if (solana) {
+    solana
+      .loadPools()
+      .then(async (loaded) => {
+        for (const [poolId, { denomination, commitments }] of loaded) {
+          const st = store.create(poolId, denomination);
+          st.deposits = commitments;
+          st.association = commitments; // non-gated: association = all deposits
+          st.depositRoot = commitments.length ? await computeRoot(commitments) : null;
+          st.associationRoot = st.depositRoot;
+        }
+        logger.info({ pools: loaded.size }, "rehydrated pools from chain");
+      })
+      .catch((err) => logger.warn({ err: String(err) }, "pool rehydrate failed"));
+  }
+
+  // After a deposit changes the tree, publish the new roots on-chain so the note
+  // is immediately claimable. Best-effort; skipped with ?publish=false (bulk seed).
+  async function autoPublish(id: number, pool: PoolState): Promise<void> {
+    if (!solana || !solana.canPublishRoot || !pool.depositRoot) return;
+    await solana.publishPoolRoot(id, pool.depositRoot);
+    pool.association = [...pool.deposits];
+    pool.associationRoot = pool.depositRoot;
+    await solana.setAssociationRoot(id, pool.associationRoot);
+  }
+
   const requireAuthority = () => {
     if (!solana || !solana.canPublishRoot) {
       throw new AppError(503, "authority keypair not configured", "authority_disabled");
@@ -131,7 +159,18 @@ export function poolRoutes({ solana }: AppDeps): Router {
       const index = pool.deposits.length;
       pool.deposits.push(commitment);
       pool.depositRoot = await computeRoot(pool.deposits);
-      res.status(201).json({ ok: true, index, depositRoot: pool.depositRoot });
+
+      // Publish on-chain so the note is claimable now (unless bulk-seeding).
+      let published = false;
+      if (req.query.publish !== "false") {
+        try {
+          await autoPublish(id, pool);
+          published = true;
+        } catch (err) {
+          logger.warn({ err: String(err), poolId: id }, "auto-publish failed");
+        }
+      }
+      res.status(201).json({ ok: true, index, depositRoot: pool.depositRoot, published });
     })
   );
 

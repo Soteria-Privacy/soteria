@@ -220,4 +220,46 @@ export class SolanaService {
     const cu = ComputeBudgetProgram.setComputeUnitLimit({ units: VERIFY_COMPUTE_UNITS });
     return this.send([cu, ix], this.relayer);
   }
+
+  /**
+   * Reconstruct every pool's deposit list from on-chain accounts so the operator
+   * survives restarts (and re-adopts pools it never had in memory). Pool account
+   * data = 8 disc + INIT_SPACE (1127) = 1135 bytes; Commitment = 8 + 49 = 57.
+   * Commitments are ordered by their on-chain leaf_index.
+   */
+  async loadPools(): Promise<Map<number, { denomination: string; commitments: string[] }>> {
+    const POOL_LEN = 1135;
+    const COMMIT_LEN = 57;
+    const [pools, commits] = await Promise.all([
+      this.connection.getProgramAccounts(this.programId, { filters: [{ dataSize: POOL_LEN }] }),
+      this.connection.getProgramAccounts(this.programId, { filters: [{ dataSize: COMMIT_LEN }] }),
+    ]);
+
+    const out = new Map<number, { denomination: string; commitments: string[] }>();
+    for (const { account } of pools) {
+      const d = account.data;
+      const poolId = Number(d.readBigUInt64LE(40)); // 8 disc + 32 authority
+      const denomination = d.readBigUInt64LE(48).toString();
+      out.set(poolId, { denomination, commitments: [] });
+    }
+
+    const byPool = new Map<number, { leafIndex: number; commitment: string }[]>();
+    for (const { account } of commits) {
+      const d = account.data;
+      const poolId = Number(d.readBigUInt64LE(8));
+      let v = 0n;
+      for (const b of d.subarray(16, 48)) v = (v << 8n) | BigInt(b); // 32-byte BE commitment
+      const leafIndex = Number(d.readBigUInt64LE(48));
+      (byPool.get(poolId) ?? byPool.set(poolId, []).get(poolId)!).push({
+        leafIndex,
+        commitment: v.toString(),
+      });
+    }
+    for (const [poolId, arr] of byPool) {
+      arr.sort((a, b) => a.leafIndex - b.leafIndex);
+      const p = out.get(poolId);
+      if (p) p.commitments = arr.map((x) => x.commitment);
+    }
+    return out;
+  }
 }

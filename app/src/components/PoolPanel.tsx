@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   deposit,
+  depositBurner,
   withdraw,
   fetchPool,
   claimLink,
@@ -13,6 +14,7 @@ import {
   isEncryptedCode,
   decryptClaim,
   deriveReceiveIdentity,
+  IS_LOCALNET,
   SAFE_ANONYMITY_SET,
   type PoolState,
   type Note,
@@ -93,14 +95,13 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
     }
   }
 
-  async function onPay() {
-    if (!publicKey) return;
+  async function runPay(make: () => Promise<{ note: Note; signature: string }>) {
     setBusy(true);
     setError(null);
     setLink(null);
     setDepositSig(null);
     try {
-      const r = await deposit({ connection, depositor: publicKey, sendTransaction, poolId: POOL_ID });
+      const r = await make();
       const addr = recipientAddr.trim();
       if (addr) {
         setLink(await encryptedClaimLink(r.note, addr));
@@ -116,6 +117,12 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
       setBusy(false);
     }
   }
+
+  const onPay = () => {
+    if (!publicKey) return;
+    return runPay(() => deposit({ connection, depositor: publicKey, sendTransaction, poolId: POOL_ID }));
+  };
+  const onPayBurner = () => runPay(() => depositBurner({ connection, poolId: POOL_ID }));
 
   async function onClaim() {
     if (anonSet < SAFE_ANONYMITY_SET) {
@@ -186,6 +193,17 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
             <button className="act" onClick={onPay} disabled={busy}>
               {busy ? "Depositing…" : `Pay ${denomSol ?? ""} SOL privately`}
             </button>
+          )}
+
+          {IS_LOCALNET && (
+            <div style={{ marginTop: 10 }}>
+              <button className="act ghost" onClick={onPayBurner} disabled={busy}>
+                {busy ? "Depositing…" : "Test deposit (no wallet · localnet)"}
+              </button>
+              <div className="sub" style={{ marginTop: 6 }}>
+                Skips the wallet: airdrops a throwaway key on the local validator and deposits.
+              </div>
+            </div>
           )}
 
           {link && (

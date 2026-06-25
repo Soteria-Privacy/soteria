@@ -1,6 +1,15 @@
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
 import { pool, zk } from "@soteria/sdk";
-import { SERVER } from "./soteria";
+import { SERVER, RPC_URL } from "./soteria";
+
+/** True only when pointed at a local validator — gates the no-wallet test path. */
+export const IS_LOCALNET = /127\.0\.0\.1|localhost/.test(RPC_URL);
 
 // Trusted-setup artifacts produced by scripts/setup-pool.sh, served statically.
 const WITHDRAW_WASM = "/withdraw.wasm";
@@ -105,7 +114,11 @@ export async function deposit(opts: {
   const signature = await sendTransaction(tx, connection);
   await connection.confirmTransaction(signature, "confirmed");
 
-  // Notify the operator so the commitment enters the deposit tree.
+  await notifyCommitment(poolId, commitment);
+  return { note, backup: pool.encodeNote(note), signature };
+}
+
+async function notifyCommitment(poolId: number, commitment: bigint): Promise<void> {
   const res = await fetch(`${SERVER}/pools/${poolId}/commitments`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -115,13 +128,42 @@ export async function deposit(opts: {
     const err = await res.json().catch(() => ({}));
     throw new Error(`operator rejected the commitment: ${err.error ?? res.status}`);
   }
+}
 
+/**
+ * LOCALNET-ONLY test deposit with no browser wallet: generates a throwaway
+ * keypair, airdrops to it from the local validator, and deposits. Lets you test
+ * the full flow without configuring Phantom for localhost. Never use on a real
+ * network — it would airdrop nothing and expose an in-page key.
+ */
+export async function depositBurner(opts: {
+  connection: Connection;
+  poolId: number;
+}): Promise<{ note: Note; backup: string; signature: string }> {
+  if (!IS_LOCALNET) throw new Error("test deposit is only available on a local validator");
+  const { connection, poolId } = opts;
+
+  const burner = Keypair.generate();
+  const air = await connection.requestAirdrop(burner.publicKey, Math.round(0.25 * LAMPORTS_PER_SOL));
+  await connection.confirmTransaction(air, "confirmed");
+
+  const note = pool.randomNote(poolId);
+  const commitment = await pool.commitment(note);
+  const ix = pool.depositInstruction(burner.publicKey, poolId, commitment);
+  const tx = new Transaction().add(ix);
+  tx.feePayer = burner.publicKey;
+  tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+  tx.sign(burner);
+  const signature = await connection.sendRawTransaction(tx.serialize());
+  await connection.confirmTransaction(signature, "confirmed");
+
+  await notifyCommitment(poolId, commitment);
   return { note, backup: pool.encodeNote(note), signature };
 }
 
 async function rebuildTree(commitments: string[]): Promise<zk.PoseidonMerkleTree> {
   const tree = await zk.PoseidonMerkleTree.create(20);
-  for (const c of commitments) tree.insert(BigInt(c));
+  tree.insertMany(commitments.map((c) => BigInt(c))); // O(n), not O(n²)
   return tree;
 }
 

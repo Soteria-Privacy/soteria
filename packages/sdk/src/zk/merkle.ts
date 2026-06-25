@@ -59,6 +59,15 @@ export class PoseidonMerkleTree {
     return index;
   }
 
+  /**
+   * Insert many leaves and rebuild once — O(n) total instead of O(n²) from
+   * calling insert() in a loop. Use this to load a tree from a commitment list.
+   */
+  insertMany(leaves: bigint[]): void {
+    for (const leaf of leaves) this.layers[0].push(leaf);
+    this.rebuild();
+  }
+
   private rebuild() {
     for (let level = 0; level < this.depth; level++) {
       const cur = this.layers[level];

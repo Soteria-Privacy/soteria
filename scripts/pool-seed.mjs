@@ -44,10 +44,14 @@ async function main() {
   const funder = Keypair.generate();
   const need = Math.ceil(COUNT * 0.12) + 3;
   console.log(`→ funding ${need} SOL for ${COUNT} deposits`);
-  await conn.confirmTransaction(
-    await conn.requestAirdrop(funder.publicKey, need * LAMPORTS_PER_SOL),
-    "confirmed"
-  );
+  // Airdrop in chunks — the local faucet caps a single request.
+  for (let left = need; left > 0; left -= 50) {
+    const amt = Math.min(50, left);
+    await conn.confirmTransaction(
+      await conn.requestAirdrop(funder.publicKey, amt * LAMPORTS_PER_SOL),
+      "confirmed"
+    );
+  }
 
   let done = 0;
   for (let i = 0; i < COUNT; i += PER_TX) {
@@ -60,7 +64,8 @@ async function main() {
     }
     tx.feePayer = funder.publicKey;
     await sendAndConfirmTransaction(conn, tx, [funder], { commitment: "confirmed" });
-    for (const c of batch) await post(`/pools/${POOL_ID}/commitments`, { commitment: c.toString() });
+    for (const c of batch)
+      await post(`/pools/${POOL_ID}/commitments?publish=false`, { commitment: c.toString() });
     done += batch.length;
     if (done % 20 === 0 || done === COUNT) console.log(`  ${done}/${COUNT} deposited`);
   }
