@@ -9,7 +9,7 @@ import anchor from "@coral-xyz/anchor";
 import { buildPoseidon } from "circomlibjs";
 import { keccak_256 } from "@noble/hashes/sha3";
 import { groth16 } from "snarkjs";
-import { zk } from "@soteria/sdk";
+import { zk } from "@soteria1/sdk";
 
 const RPC = process.env.RPC ?? "https://api.devnet.solana.com";
 const PROGRAM = new PublicKey("9HNLpUVFX61pX759oy1vuMMwQaQaGnK9KgMyhTrDrRGs");

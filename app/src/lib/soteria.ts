@@ -1,4 +1,4 @@
-import { stealth, zk } from "@soteria/sdk";
+import { stealth, zk } from "@soteria1/sdk";
 
 export const SERVER = import.meta.env.VITE_SOTERIA_SERVER ?? "http://localhost:8787";
 export const RPC_URL =

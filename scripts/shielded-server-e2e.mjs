@@ -2,7 +2,7 @@
 // pay (/relay) routed through the SERVER, not direct program calls.
 import { readFileSync } from "fs";
 import { Connection, Keypair, Transaction, ComputeBudgetProgram } from "@solana/web3.js";
-import { shielded, zk } from "@soteria/sdk";
+import { shielded, zk } from "@soteria1/sdk";
 const RPC="https://api.devnet.solana.com", SERVER="http://127.0.0.1:8787", ID=5;
 const WASM="circuits/build/transaction_js/transaction.wasm", ZKEY="circuits/build/transaction_final.zkey";
 const conn=new Connection(RPC,"confirmed");

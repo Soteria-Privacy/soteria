@@ -5,7 +5,7 @@ import {
   Transaction,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
-import { pool, zk } from "@soteria/sdk";
+import { pool, zk } from "@soteria1/sdk";
 import { SERVER, RPC_URL } from "./soteria";
 
 /** True only when pointed at a local validator — gates the no-wallet test path. */

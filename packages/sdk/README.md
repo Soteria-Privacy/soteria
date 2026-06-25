@@ -1,16 +1,16 @@
-# @soteria/sdk
+# @soteria1/sdk
 
 Client SDK for **Soteria** — privacy primitives for Solana. Runs in the browser
 (keys never leave the device) or Node.
 
 ```bash
-npm install @soteria/sdk
+npm install @soteria1/sdk
 ```
 
 ## Modules
 
 ```ts
-import { shielded, pool, zk, stealth, confidential } from "@soteria/sdk";
+import { shielded, pool, zk, stealth, confidential } from "@soteria1/sdk";
 ```
 
 | Module | What it does |
@@ -24,7 +24,7 @@ import { shielded, pool, zk, stealth, confidential } from "@soteria/sdk";
 ## Example — a private payment (shielded)
 
 ```ts
-import { shielded } from "@soteria/sdk";
+import { shielded } from "@soteria1/sdk";
 
 // derive a recoverable shielded identity from a wallet signature
 const me = await shielded.deriveShieldedKeypair(signature);

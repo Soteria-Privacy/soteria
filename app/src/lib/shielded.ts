@@ -4,7 +4,7 @@ import {
   Transaction,
   ComputeBudgetProgram,
 } from "@solana/web3.js";
-import { shielded, zk } from "@soteria/sdk";
+import { shielded, zk } from "@soteria1/sdk";
 import { SERVER } from "./soteria";
 
 const SHIELDED_ID = Number(import.meta.env.VITE_SOTERIA_SHIELDED_ID ?? 0);

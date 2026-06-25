@@ -31,7 +31,7 @@ export function confidentialRoutes(_deps: AppDeps): Router {
       }
       const amount = BigInt(Math.min(Math.floor(requested), Number(MINT_AMOUNT)));
 
-      const sdk = await import("@soteria/sdk");
+      const sdk = await import("@soteria1/sdk");
       const {
         ConfidentialClient,
         deriveAccountKeys,

@@ -4,7 +4,7 @@
 import { readFileSync } from "fs";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import anchor from "@coral-xyz/anchor";
-import { shielded, zk } from "@soteria/sdk";
+import { shielded, zk } from "@soteria1/sdk";
 
 const RPC = process.env.RPC ?? "https://api.devnet.solana.com";
 const PROGRAM = new PublicKey("9HNLpUVFX61pX759oy1vuMMwQaQaGnK9KgMyhTrDrRGs");

@@ -14,7 +14,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.35",
     "@solana/wallet-adapter-wallets": "^0.19.32",
     "@solana/web3.js": "^1.95.4",
-    "@soteria/sdk": "*",
+    "@soteria1/sdk": "*",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
     "qrcode.react": "^4.2.0",

@@ -1,5 +1,5 @@
 {
-  "name": "@soteria/sdk",
+  "name": "@soteria1/sdk",
   "version": "0.1.0",
   "description": "Soteria privacy SDK for Solana: hidden-amount shielded payments, ZK selective disclosure, stealth addresses, confidential amounts.",
   "license": "MIT",

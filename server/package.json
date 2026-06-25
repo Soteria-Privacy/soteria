@@ -16,7 +16,7 @@
     "@noble/curves": "^1.9.7",
     "@solana/kit": "^6.10.0",
     "@solana/web3.js": "^1.95.4",
-    "@soteria/sdk": "*",
+    "@soteria1/sdk": "*",
     "bs58": "^6.0.0",
     "circomlibjs": "^0.1.7",
     "cors": "^2.8.5",

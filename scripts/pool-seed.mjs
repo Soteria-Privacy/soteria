@@ -11,7 +11,7 @@ import {
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { pool } from "@soteria/sdk";
+import { pool } from "@soteria1/sdk";
 import { config as dotenv } from "dotenv";
 
 dotenv({ path: "server/.env" });
