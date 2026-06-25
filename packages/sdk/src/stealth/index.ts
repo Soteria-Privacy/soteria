@@ -1,2 +1,2 @@
-export * from "./stealth";
-export * from "./scanner";
+export * from "./stealth.js";
+export * from "./scanner.js";

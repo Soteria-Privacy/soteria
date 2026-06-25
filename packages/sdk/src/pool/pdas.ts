@@ -1,6 +1,6 @@
 import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js";
-import { toBytes32 } from "./note";
-import type { FormattedProof } from "./prover";
+import { toBytes32 } from "./note.js";
+import type { FormattedProof } from "./prover.js";
 
 export const POOL_PROGRAM_ID = new PublicKey(
   "9HNLpUVFX61pX759oy1vuMMwQaQaGnK9KgMyhTrDrRGs"

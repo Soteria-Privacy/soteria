@@ -1,12 +1,50 @@
 {
   "name": "@soteria/sdk",
   "version": "0.1.0",
-  "description": "Soteria client SDK: zk selective disclosure, stealth receiving, confidential amounts.",
+  "description": "Soteria privacy SDK for Solana: hidden-amount shielded payments, ZK selective disclosure, stealth addresses, confidential amounts.",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "solana",
+    "privacy",
+    "zk",
+    "zero-knowledge",
+    "shielded",
+    "payments",
+    "groth16",
+    "circom",
+    "stealth",
+    "confidential"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/romeoscript/soteria.git",
+    "directory": "packages/sdk"
+  },
+  "homepage": "https://github.com/romeoscript/soteria#readme",
+  "bugs": {
+    "url": "https://github.com/romeoscript/soteria/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@noble/curves": "^1.6.0",

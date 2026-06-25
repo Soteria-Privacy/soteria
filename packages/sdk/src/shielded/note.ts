@@ -1,5 +1,5 @@
-import { H, FIELD } from "./keypair";
-import { encryptNote as eciesEncrypt, decryptNote as eciesDecrypt } from "../pool/crypto";
+import { H, FIELD } from "./keypair.js";
+import { encryptNote as eciesEncrypt, decryptNote as eciesDecrypt } from "../pool/crypto.js";
 
 /**
  * A shielded UTXO. `amount` and `blinding` are secret; `pubkey` is the owner's

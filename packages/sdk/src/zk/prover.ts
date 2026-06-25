@@ -4,7 +4,7 @@ import {
   TransactionInstruction,
   SystemProgram,
 } from "@solana/web3.js";
-import { PoseidonMerkleTree } from "./merkle";
+import { PoseidonMerkleTree } from "./merkle.js";
 
 // BN254 base field prime (for negating proof.A, per groth16-solana convention).
 const Q =

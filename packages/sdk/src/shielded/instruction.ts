@@ -1,5 +1,5 @@
 import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js";
-import type { FormattedTx } from "./prover";
+import type { FormattedTx } from "./prover.js";
 
 export const SHIELDED_PROGRAM_ID = new PublicKey(
   "9HNLpUVFX61pX759oy1vuMMwQaQaGnK9KgMyhTrDrRGs"

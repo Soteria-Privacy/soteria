@@ -1,1 +1,1 @@
-export * from "./confidential";
+export * from "./confidential.js";

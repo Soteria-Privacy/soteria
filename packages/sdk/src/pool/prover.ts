@@ -1,7 +1,7 @@
 import { groth16 } from "snarkjs";
 import { PublicKey } from "@solana/web3.js";
-import { PoseidonMerkleTree } from "../zk/merkle";
-import { Note } from "./note";
+import { PoseidonMerkleTree } from "../zk/merkle.js";
+import { Note } from "./note.js";
 
 // BN254 base field prime (for negating proof.A, per groth16-solana convention).
 const Q =

@@ -1,4 +1,4 @@
-import { recoverStealth, StealthKeys } from "./stealth";
+import { recoverStealth, StealthKeys } from "./stealth.js";
 
 /** One published announcement: the sender's ephemeral key + a view tag. */
 export interface Announcement {

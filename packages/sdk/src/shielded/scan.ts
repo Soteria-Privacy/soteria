@@ -1,5 +1,5 @@
-import { ShieldedKeypair } from "./keypair";
-import { Note, commitment, nullifier, decryptNoteSecret } from "./note";
+import { ShieldedKeypair } from "./keypair.js";
+import { Note, commitment, nullifier, decryptNoteSecret } from "./note.js";
 
 /** One output emitted by `transact`, paired with its encrypted secret. */
 export interface OutputRecord {

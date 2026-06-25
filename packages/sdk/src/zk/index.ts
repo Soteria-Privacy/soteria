@@ -1,2 +1,2 @@
-export * from "./merkle";
-export * from "./prover";
+export * from "./merkle.js";
+export * from "./prover.js";

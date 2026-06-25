@@ -1,8 +1,8 @@
 import { groth16 } from "snarkjs";
 import { keccak_256 } from "@noble/hashes/sha3";
 import { PublicKey } from "@solana/web3.js";
-import { H, FIELD, ShieldedKeypair } from "./keypair";
-import { Note, newNote, commitment, nullifier, encryptNoteSecret } from "./note";
+import { H, FIELD, ShieldedKeypair } from "./keypair.js";
+import { Note, newNote, commitment, nullifier, encryptNoteSecret } from "./note.js";
 
 // BN254 base field (for negating proof.A).
 const Q =
