@@ -1,17 +1,23 @@
 pub mod create_group;
 pub mod deposit;
 pub mod init_pool;
+pub mod init_shielded;
 pub mod publish_pool_root;
 pub mod publish_root;
+pub mod publish_shielded_root;
 pub mod set_authority;
+pub mod transact;
 pub mod verify_proof;
 pub mod withdraw;
 
 pub use create_group::*;
 pub use deposit::*;
 pub use init_pool::*;
+pub use init_shielded::*;
 pub use publish_pool_root::*;
 pub use publish_root::*;
+pub use publish_shielded_root::*;
 pub use set_authority::*;
+pub use transact::*;
 pub use verify_proof::*;
 pub use withdraw::*;

@@ -7,8 +7,9 @@ pub mod instructions;
 pub mod state;
 mod verifying_key;
 mod verifying_key_pool;
+mod verifying_key_transaction;
 
-use constants::{NUM_PUBLIC_INPUTS, POOL_NUM_PUBLIC_INPUTS};
+use constants::{NUM_PUBLIC_INPUTS, POOL_NUM_PUBLIC_INPUTS, TX_NUM_PUBLIC_INPUTS};
 use instructions::*;
 
 #[cfg(test)]
@@ -24,6 +25,11 @@ const _: () = assert!(
 const _: () = assert!(
     verifying_key_pool::VERIFYINGKEY_POOL.nr_pubinputs as usize == POOL_NUM_PUBLIC_INPUTS,
     "VERIFYINGKEY_POOL public-input count must match circuits/withdraw.circom"
+);
+
+const _: () = assert!(
+    verifying_key_transaction::VERIFYINGKEY_TRANSACTION.nr_pubinputs as usize == TX_NUM_PUBLIC_INPUTS,
+    "VERIFYINGKEY_TRANSACTION public-input count must match circuits/transaction.circom"
 );
 
 #[program]
@@ -90,6 +96,31 @@ pub mod soteria_verifier {
         fee: u64,
     ) -> Result<()> {
         instructions::withdraw::handler(ctx, proof_a, proof_b, proof_c, public_inputs, fee)
+    }
+
+    // ── Hidden-amount shielded pool (Option B) ──
+
+    pub fn init_shielded(ctx: Context<InitShielded>, shielded_id: u64) -> Result<()> {
+        instructions::init_shielded::handler(ctx, shielded_id)
+    }
+
+    pub fn publish_shielded_root(
+        ctx: Context<UpdateShieldedRoot>,
+        new_root: [u8; 32],
+    ) -> Result<()> {
+        instructions::publish_shielded_root::handler(ctx, new_root)
+    }
+
+    pub fn transact(
+        ctx: Context<Transact>,
+        proof_a: [u8; 64],
+        proof_b: [u8; 128],
+        proof_c: [u8; 64],
+        public_inputs: [[u8; 32]; TX_NUM_PUBLIC_INPUTS],
+        ext_amount: i64,
+        fee: u64,
+    ) -> Result<()> {
+        instructions::transact::handler(ctx, proof_a, proof_b, proof_c, public_inputs, ext_amount, fee)
     }
 }
 

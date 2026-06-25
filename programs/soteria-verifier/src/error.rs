@@ -26,4 +26,14 @@ pub enum SoteriaError {
     FeeTooHigh,
     #[msg("pool denomination must be non-zero")]
     ZeroDenomination,
+
+    // ── Hidden-amount shielded pool ──
+    #[msg("proof's publicAmount does not match the declared ext_amount/fee")]
+    PublicAmountMismatch,
+    #[msg("proof's extDataHash does not match the transaction's external data")]
+    ExtDataHashMismatch,
+    #[msg("the two input nullifiers must differ")]
+    DuplicateNullifier,
+    #[msg("vault has insufficient balance for this withdrawal")]
+    InsufficientVault,
 }

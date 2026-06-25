@@ -65,3 +65,28 @@ pub struct Withdrawn {
     pub recipient: Pubkey,
     pub fee: u64,
 }
+
+// ── Hidden-amount shielded pool ──
+
+#[event]
+pub struct ShieldedCreated {
+    pub shielded_id: u64,
+    pub authority: Pubkey,
+}
+
+#[event]
+pub struct ShieldedRootPublished {
+    pub shielded_id: u64,
+    pub root: [u8; 32],
+    pub index: u32,
+}
+
+/// One join-split. The operator inserts the two output commitments into the
+/// tree (at leaf_index_start, +1) and recipients scan `encrypted_outputs`.
+#[event]
+pub struct Transacted {
+    pub shielded_id: u64,
+    pub nullifiers: [[u8; 32]; 2],
+    pub output_commitments: [[u8; 32]; 2],
+    pub leaf_index_start: u64,
+}

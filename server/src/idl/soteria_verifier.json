@@ -428,6 +428,176 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "init_shielded",
+      "discriminator": [
+        10,
+        117,
+        115,
+        9,
+        206,
+        76,
+        126,
+        253
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "shielded",
+          "writable": true
+        },
+        {
+          "name": "vault"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "shielded_id",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "publish_shielded_root",
+      "discriminator": [
+        209,
+        175,
+        225,
+        182,
+        104,
+        115,
+        93,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "shielded",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "new_root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "transact",
+      "discriminator": [
+        217,
+        149,
+        130,
+        143,
+        221,
+        52,
+        252,
+        119
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "shielded",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "recipient",
+          "writable": true
+        },
+        {
+          "name": "relayer",
+          "writable": true
+        },
+        {
+          "name": "nullifier1",
+          "writable": true
+        },
+        {
+          "name": "nullifier2",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "proof_a",
+          "type": {
+            "array": [
+              "u8",
+              64
+            ]
+          }
+        },
+        {
+          "name": "proof_b",
+          "type": {
+            "array": [
+              "u8",
+              128
+            ]
+          }
+        },
+        {
+          "name": "proof_c",
+          "type": {
+            "array": [
+              "u8",
+              64
+            ]
+          }
+        },
+        {
+          "name": "public_inputs",
+          "type": {
+            "array": [
+              {
+                "array": [
+                  "u8",
+                  32
+                ]
+              },
+              7
+            ]
+          }
+        },
+        {
+          "name": "ext_amount",
+          "type": "i64"
+        },
+        {
+          "name": "fee",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -455,6 +625,32 @@
         202,
         189,
         70
+      ]
+    },
+    {
+      "name": "Shielded",
+      "discriminator": [
+        146,
+        168,
+        71,
+        130,
+        210,
+        44,
+        87,
+        70
+      ]
+    },
+    {
+      "name": "ShieldedNullifier",
+      "discriminator": [
+        248,
+        232,
+        237,
+        81,
+        51,
+        201,
+        244,
+        92
       ]
     },
     {
@@ -614,6 +810,45 @@
         219,
         13
       ]
+    },
+    {
+      "name": "ShieldedCreated",
+      "discriminator": [
+        152,
+        247,
+        37,
+        160,
+        114,
+        34,
+        108,
+        36
+      ]
+    },
+    {
+      "name": "ShieldedRootPublished",
+      "discriminator": [
+        34,
+        64,
+        248,
+        94,
+        144,
+        17,
+        13,
+        180
+      ]
+    },
+    {
+      "name": "Transacted",
+      "discriminator": [
+        231,
+        115,
+        66,
+        233,
+        19,
+        149,
+        190,
+        194
+      ]
     }
   ],
   "errors": [
@@ -671,6 +906,26 @@
       "code": 6010,
       "name": "ZeroDenomination",
       "msg": "pool denomination must be non-zero"
+    },
+    {
+      "code": 6011,
+      "name": "PublicAmountMismatch",
+      "msg": "proof's publicAmount does not match the declared ext_amount/fee"
+    },
+    {
+      "code": 6012,
+      "name": "ExtDataHashMismatch",
+      "msg": "proof's extDataHash does not match the transaction's external data"
+    },
+    {
+      "code": 6013,
+      "name": "DuplicateNullifier",
+      "msg": "the two input nullifiers must differ"
+    },
+    {
+      "code": 6014,
+      "name": "InsufficientVault",
+      "msg": "vault has insufficient balance for this withdrawal"
     }
   ],
   "types": [
@@ -1099,6 +1354,170 @@
           },
           {
             "name": "fee",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Shielded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "shielded_id",
+            "type": "u64"
+          },
+          {
+            "name": "depth",
+            "type": "u8"
+          },
+          {
+            "name": "num_commitments",
+            "type": "u64"
+          },
+          {
+            "name": "root_count",
+            "type": "u64"
+          },
+          {
+            "name": "current_root_index",
+            "type": "u32"
+          },
+          {
+            "name": "roots",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShieldedNullifier",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shielded_id",
+            "type": "u64"
+          },
+          {
+            "name": "nullifier_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShieldedCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shielded_id",
+            "type": "u64"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ShieldedRootPublished",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shielded_id",
+            "type": "u64"
+          },
+          {
+            "name": "root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "index",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Transacted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "shielded_id",
+            "type": "u64"
+          },
+          {
+            "name": "nullifiers",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                2
+              ]
+            }
+          },
+          {
+            "name": "output_commitments",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                2
+              ]
+            }
+          },
+          {
+            "name": "leaf_index_start",
             "type": "u64"
           }
         ]

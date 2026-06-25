@@ -47,3 +47,33 @@ pub const PI_POOL_ASSOCIATION_ROOT: usize = 2;
 pub const PI_POOL_RECIPIENT_HI: usize = 3;
 pub const PI_POOL_RECIPIENT_LO: usize = 4;
 pub const PI_POOL_FEE: usize = 5;
+
+// ── Hidden-amount shielded pool (Option B) ─────────────────────────────────
+
+#[constant]
+pub const SHIELDED_SEED: &[u8] = b"shielded";
+
+#[constant]
+pub const SHIELDED_VAULT_SEED: &[u8] = b"shvault";
+
+#[constant]
+pub const SHIELDED_NULLIFIER_SEED: &[u8] = b"shnull";
+
+/// Public-signal count of circuits/transaction.circom (2-in / 2-out).
+pub const TX_NUM_PUBLIC_INPUTS: usize = 7;
+
+// transaction.circom public-signal order (all `public`, no outputs):
+//   [root, publicAmount, extDataHash, inputNullifier[0..2], outputCommitment[0..2]]
+pub const PI_TX_ROOT: usize = 0;
+pub const PI_TX_PUBLIC_AMOUNT: usize = 1;
+pub const PI_TX_EXT_DATA_HASH: usize = 2;
+pub const PI_TX_NULLIFIER_1: usize = 3;
+pub const PI_TX_NULLIFIER_2: usize = 4;
+pub const PI_TX_OUT_COMMIT_1: usize = 5;
+pub const PI_TX_OUT_COMMIT_2: usize = 6;
+
+/// BN254 scalar field modulus, big-endian. publicAmount is computed mod this.
+pub const FIELD_MODULUS_BE: [u8; 32] = [
+    48, 100, 78, 114, 225, 49, 160, 41, 184, 80, 69, 182, 129, 129, 88, 93, 40, 51, 232, 72, 121,
+    185, 112, 145, 67, 225, 245, 147, 240, 0, 0, 1,
+];
