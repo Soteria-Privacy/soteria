@@ -54,7 +54,7 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
           <motion.p className="lp-lede" variants={item}>
             Share one link and receive to a fresh, unlinkable address every time. Your
             main wallet never appears on-chain, and only you can see or spend what comes
-            in. No mixing pools, no custody.
+            in — self-custodial, end to end.
           </motion.p>
           <motion.div className="lp-cta" variants={item}>
             <button className="act" onClick={onPay}>
@@ -86,12 +86,12 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
       <div className="lp-foot">
         <div className="lp-trust">
           <span>Self-custodial</span>
-          <span>No mixing pools</span>
+          <span>Compliant privacy pools</span>
           <span>Auditable by design</span>
         </div>
         <p className="lp-dev">
           Building an app? The same primitives — stealth payments, ZK disclosure,
-          confidential amounts — ship as an{" "}
+          confidential amounts, shielded pools — ship as an{" "}
           <button className="link-inline" onClick={onEnter}>
             open SDK
           </button>
