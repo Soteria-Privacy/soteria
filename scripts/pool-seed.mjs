@@ -3,6 +3,7 @@
 // operator, then publishes the deposit + association roots once at the end.
 //
 //   COUNT=100 POOL_ID=2 node scripts/pool-seed.mjs
+import { readFileSync } from "fs";
 import {
   Connection,
   Keypair,
@@ -41,16 +42,23 @@ async function main() {
     if (!/duplicate/.test(String(e))) throw e;
   });
 
-  const funder = Keypair.generate();
   const need = Math.ceil(COUNT * 0.12) + 3;
-  console.log(`→ funding ${need} SOL for ${COUNT} deposits`);
-  // Airdrop in chunks — the local faucet caps a single request.
-  for (let left = need; left > 0; left -= 50) {
-    const amt = Math.min(50, left);
-    await conn.confirmTransaction(
-      await conn.requestAirdrop(funder.publicKey, amt * LAMPORTS_PER_SOL),
-      "confirmed"
-    );
+  let funder;
+  if (process.env.FUNDER) {
+    // Devnet/mainnet: fund deposits from an already-funded keypair file.
+    funder = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(readFileSync(process.env.FUNDER, "utf8"))));
+    console.log(`→ funding from ${funder.publicKey.toBase58()} (${need} SOL needed)`);
+  } else {
+    // Localnet: generate + airdrop (chunked — the faucet caps a single request).
+    funder = Keypair.generate();
+    console.log(`→ airdropping ${need} SOL for ${COUNT} deposits`);
+    for (let left = need; left > 0; left -= 50) {
+      const amt = Math.min(50, left);
+      await conn.confirmTransaction(
+        await conn.requestAirdrop(funder.publicKey, amt * LAMPORTS_PER_SOL),
+        "confirmed"
+      );
+    }
   }
 
   let done = 0;

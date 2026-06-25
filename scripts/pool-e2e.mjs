@@ -9,6 +9,7 @@ import {
   Connection,
   Keypair,
   Transaction,
+  SystemProgram,
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
@@ -57,8 +58,24 @@ async function main() {
 
   // ── DEPOSIT ──
   const depositor = Keypair.generate();
-  const sig = await conn.requestAirdrop(depositor.publicKey, 1 * LAMPORTS_PER_SOL);
-  await conn.confirmTransaction(sig, "confirmed");
+  if (process.env.FUNDER) {
+    const funder = Keypair.fromSecretKey(
+      Uint8Array.from(JSON.parse(readFileSync(process.env.FUNDER, "utf8")))
+    );
+    const t = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: funder.publicKey,
+        toPubkey: depositor.publicKey,
+        lamports: Math.round(0.25 * LAMPORTS_PER_SOL),
+      })
+    );
+    await sendAndConfirmTransaction(conn, t, [funder], { commitment: "confirmed" });
+  } else {
+    await conn.confirmTransaction(
+      await conn.requestAirdrop(depositor.publicKey, 1 * LAMPORTS_PER_SOL),
+      "confirmed"
+    );
+  }
 
   const note = pool.randomNote(POOL_ID);
   const commitment = await pool.commitment(note);
@@ -89,11 +106,14 @@ async function main() {
   const assocTree = await rebuild(state.association);
   console.log("→ generating ZK proof (anonymity set size:", state.deposits.length + ")");
 
+  const tProve = process.hrtime.bigint();
   const raw = await pool.proveWithdrawRaw(
     { note, depositTree, depositLeafIndex, assocTree, assocLeafIndex, recipient, fee: FEE },
     WASM,
     ZKEY
   );
+  const proveMs = Number(process.hrtime.bigint() - tProve) / 1e6;
+  console.log(`→ proof generated in ${proveMs.toFixed(0)} ms (tree depth fixed at 20)`);
 
   const before = await conn.getBalance(recipient);
   const out = await post(`/pools/${POOL_ID}/withdraw`, {
