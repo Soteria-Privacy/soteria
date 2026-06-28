@@ -18,6 +18,11 @@ const toLamports = (sol: string) => BigInt(Math.round(parseFloat(sol) * LAMPORTS
 const FEE = 5000n;
 
 type Tab = "deposit" | "pay" | "withdraw";
+const LABELS: Record<Tab, { primary: string; busy: string }> = {
+  deposit: { primary: "Deposit privately", busy: "Depositing…" },
+  pay: { primary: "Pay privately", busy: "Proving & paying…" },
+  withdraw: { primary: "Withdraw", busy: "Proving & withdrawing…" },
+};
 
 export function ShieldedPanel() {
   const { connection } = useConnection();
@@ -29,12 +34,13 @@ export function ShieldedPanel() {
 
   const [id, setId] = useState<Identity | null>(null);
   const [bal, setBal] = useState<bigint | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const [amount, setAmount] = useState("");
   const [toAddress, setToAddress] = useState("");
 
   async function unlock() {
-    if (!signMessage) { setError("wallet can't sign messages"); return null; }
+    if (!signMessage) { setError("This wallet can't sign messages."); return null; }
     setError(null);
     try {
       const ident = await deriveIdentity(signMessage);
@@ -49,7 +55,7 @@ export function ShieldedPanel() {
   }
 
   async function run(fn: (ident: Identity) => Promise<string>) {
-    let ident = id ?? (await unlock());
+    const ident = id ?? (await unlock());
     if (!ident) return;
     setBusy(true); setError(null); setStatus(null);
     try {
@@ -59,90 +65,131 @@ export function ShieldedPanel() {
     finally { setBusy(false); }
   }
 
-  const sol = (b: bigint | null) => (b === null ? "…" : (Number(b) / LAMPORTS_PER_SOL).toFixed(6));
+  function onSubmit() {
+    if (!publicKey) return;
+    const amt = toLamports(amount);
+    run(async (ident) => {
+      if (tab === "deposit") {
+        const r = await deposit({ connection, wallet: publicKey, sendTransaction, id: ident, amount: amt });
+        return `Deposited — tx ${short(r.signature, 8)}`;
+      }
+      if (tab === "pay") {
+        const r = await pay({ id: ident, toAddress: toAddress.trim(), amount: amt, fee: FEE });
+        return `Paid privately — tx ${short(r.signature, 8)}`;
+      }
+      const r = await withdraw({ id: ident, toSolAddress: toAddress.trim(), amount: amt, fee: FEE });
+      return `Withdrawn — tx ${short(r.signature, 8)}`;
+    });
+  }
+
+  async function copyAddr() {
+    if (!id) return;
+    try {
+      await navigator.clipboard.writeText(myAddress(id));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* clipboard blocked */ }
+  }
+
+  const sol = (b: bigint | null) => (b === null ? "…" : (Number(b) / LAMPORTS_PER_SOL).toFixed(4));
+  const needsAddr = tab !== "deposit";
+  const canSubmit = Boolean(amount) && (!needsAddr || Boolean(toAddress));
 
   return (
     <div className="panel">
-      <h3>Private payments</h3>
+      <div className="panel-head">
+        <h3>Private payments</h3>
+        <span className="status">devnet</span>
+      </div>
       <p className="sub">
         Deposit <strong>any amount</strong> into one private balance. Pay anyone privately —
         amounts are <strong>encrypted</strong>, change comes back automatically, and the chain
         never sees who paid whom or how much.
       </p>
-      <span className="status">devnet</span>
 
       {!publicKey ? (
-        <div style={{ marginTop: 18 }}><WalletMultiButton /></div>
+        <div className="connect-cta"><WalletMultiButton /></div>
       ) : !id ? (
-        <div style={{ marginTop: 18 }}>
-          <button className="act" onClick={unlock}>Unlock my shielded balance</button>
-          <div className="sub" style={{ marginTop: 6 }}>Sign once to derive your shielded keys.</div>
+        <div className="connect-cta">
+          <button className="act block" onClick={unlock}>Unlock my shielded balance</button>
+          <p className="sub small">Sign once to derive your shielded keys — nothing leaves your device.</p>
         </div>
       ) : (
         <>
-          <div className="readout" style={{ marginTop: 16 }}>
-            <div><span className="k">shielded balance </span><strong style={{ color: "#34e7cf" }}>{sol(bal)} SOL</strong></div>
-            <div style={{ marginTop: 8 }}><span className="k">your address </span>{short(myAddress(id), 10)}</div>
-            <textarea className="input" readOnly rows={2} value={myAddress(id)}
-              style={{ width: "100%", fontFamily: "monospace", marginTop: 6 }}
-              onFocus={(e) => e.currentTarget.select()} />
-            <div className="sub" style={{ marginTop: 4 }}>Share this address so people can pay you privately.</div>
+          <div className="balance-hero">
+            <div>
+              <div className="balance-label">Shielded balance</div>
+              <div className="balance-amount">{sol(bal)}<span>SOL</span></div>
+            </div>
+            <button
+              className={`addr-chip ${copied ? "copied" : ""}`}
+              onClick={copyAddr}
+              aria-label="Copy your shielded payment address"
+            >
+              <span className="addr-chip-k">your address</span>
+              <span className="addr-chip-v">{short(myAddress(id), 6)}</span>
+              <span className="addr-chip-cta">{copied ? "✓ copied" : "copy"}</span>
+            </button>
           </div>
+          <p className="sub small">Share your address so people can pay you privately.</p>
 
-          <div className="row" style={{ marginTop: 16 }}>
+          <div className="seg" role="tablist" aria-label="Action">
             {(["deposit", "pay", "withdraw"] as Tab[]).map((t) => (
-              <button key={t} className={`act ${tab === t ? "" : "ghost"}`} onClick={() => setTab(t)}>
+              <button
+                key={t}
+                role="tab"
+                aria-selected={tab === t}
+                className={tab === t ? "on" : ""}
+                onClick={() => { setTab(t); setStatus(null); setError(null); }}
+              >
                 {t[0].toUpperCase() + t.slice(1)}
               </button>
             ))}
           </div>
 
-          <div style={{ marginTop: 16 }}>
-            <label className="k">Amount (SOL)</label>
-            <input className="input" value={amount} placeholder="e.g. 0.37"
-              style={{ width: "100%", marginBottom: 12 }} onChange={(e) => setAmount(e.target.value)} />
+          <div className="pay-form">
+            <label className="field-label" htmlFor="sh-amount">Amount</label>
+            <div className="input-suffix">
+              <input
+                id="sh-amount"
+                className="input"
+                inputMode="decimal"
+                value={amount}
+                placeholder="0.00"
+                onChange={(e) => setAmount(e.target.value)}
+              />
+              <span className="suffix">SOL</span>
+            </div>
 
-            {tab !== "deposit" && (
+            {needsAddr && (
               <>
-                <label className="k">{tab === "pay" ? "Recipient shielded address" : "Withdraw to (Solana address)"}</label>
-                <input className="input" value={toAddress}
-                  placeholder={tab === "pay" ? "their soteria shielded address" : "a Solana wallet"}
-                  style={{ width: "100%", marginBottom: 12, fontFamily: "monospace" }}
-                  onChange={(e) => setToAddress(e.target.value)} />
+                <label className="field-label" htmlFor="sh-to">
+                  {tab === "pay" ? "Recipient's shielded address" : "Withdraw to"}
+                </label>
+                <input
+                  id="sh-to"
+                  className="input"
+                  value={toAddress}
+                  placeholder={tab === "pay" ? "a Soteria shielded address" : "any Solana wallet address"}
+                  onChange={(e) => setToAddress(e.target.value)}
+                />
               </>
             )}
 
-            {tab === "deposit" ? (
-              <button className="act" disabled={busy || !amount} onClick={() =>
-                run(async (ident) => {
-                  const r = await deposit({ connection, wallet: publicKey, sendTransaction, id: ident, amount: toLamports(amount) });
-                  return `deposited — tx ${short(r.signature, 8)}`;
-                })}>
-                {busy ? "Depositing…" : "Deposit privately"}
-              </button>
-            ) : tab === "pay" ? (
-              <button className="act" disabled={busy || !amount || !toAddress} onClick={() =>
-                run(async (ident) => {
-                  const r = await pay({ id: ident, toAddress: toAddress.trim(), amount: toLamports(amount), fee: FEE });
-                  return `paid privately — tx ${short(r.signature, 8)}`;
-                })}>
-                {busy ? "Proving & paying…" : "Pay privately"}
-              </button>
-            ) : (
-              <button className="act" disabled={busy || !amount || !toAddress} onClick={() =>
-                run(async (ident) => {
-                  const r = await withdraw({ id: ident, toSolAddress: toAddress.trim(), amount: toLamports(amount), fee: FEE });
-                  return `withdrawn — tx ${short(r.signature, 8)}`;
-                })}>
-                {busy ? "Proving & withdrawing…" : "Withdraw"}
-              </button>
+            <button className="act block" disabled={busy || !canSubmit} onClick={onSubmit}>
+              {busy ? <><span className="spinner" aria-hidden="true" />{LABELS[tab].busy}</> : LABELS[tab].primary}
+            </button>
+            {needsAddr && (
+              <p className="sub small">
+                Network fee {(Number(FEE) / LAMPORTS_PER_SOL).toFixed(6)} SOL — paid to the relayer.
+              </p>
             )}
           </div>
         </>
       )}
 
-      {status && <div className="readout" style={{ marginTop: 16, color: "#34e7cf" }}>✓ {status}</div>}
-      {error && <div className="readout" style={{ marginTop: 16, color: "#ff6b6b" }}>{error}</div>}
+      {status && <div className="toast ok" role="status">✓ {status}</div>}
+      {error && <div className="toast err" role="alert">⚠ {error}</div>}
     </div>
   );
 }

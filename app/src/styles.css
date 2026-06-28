@@ -197,6 +197,86 @@ body {
 .readout a { color: var(--honest); text-decoration: none; }
 .readout a:hover { text-decoration: underline; }
 .ok { color: var(--honest); }
+
+/* ── private-payments panel (polished) ─────────────────────────────────────── */
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.panel-head .status { margin-top: 0; }
+.sub.small { font-size: 12.5px; margin-top: 7px; color: var(--muted); }
+
+.connect-cta { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.connect-cta .act.block { max-width: 320px; }
+
+/* balance hero */
+.balance-hero {
+  margin-top: 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  background: linear-gradient(180deg, rgba(52, 231, 207, 0.07), rgba(52, 231, 207, 0.015));
+  border: 1px solid rgba(52, 231, 207, 0.18); border-radius: 16px; padding: 18px 20px;
+}
+.balance-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.balance-amount { font-family: var(--display); font-size: 36px; font-weight: 700; letter-spacing: -0.025em; color: var(--ink); margin-top: 5px; line-height: 1; }
+.balance-amount span { font-size: 15px; color: var(--honest); font-weight: 600; margin-left: 7px; letter-spacing: 0; }
+
+.addr-chip {
+  display: inline-flex; align-items: center; gap: 9px; cursor: pointer; min-height: 40px;
+  background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line-2); border-radius: 999px; padding: 8px 14px;
+  font-family: var(--mono); font-size: 11.5px; transition: border-color 0.18s, color 0.18s, background 0.18s;
+}
+.addr-chip:hover { border-color: rgba(52, 231, 207, 0.4); background: rgba(52, 231, 207, 0.05); }
+.addr-chip-k { color: var(--muted); letter-spacing: 0.04em; }
+.addr-chip-v { color: var(--ink); }
+.addr-chip-cta { color: var(--honest); font-weight: 600; }
+.addr-chip.copied { border-color: rgba(52, 231, 207, 0.45); }
+
+/* segmented control */
+.seg {
+  display: flex; gap: 4px; margin-top: 24px; padding: 4px;
+  background: #05060c; border: 1px solid var(--line); border-radius: 13px;
+}
+.seg button {
+  flex: 1; cursor: pointer; border: none; background: transparent; color: var(--muted); min-height: 42px;
+  font-family: var(--display); font-weight: 600; font-size: 13.5px; padding: 9px 12px; border-radius: 9px;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+.seg button:hover { color: var(--ink); }
+.seg button.on {
+  background: rgba(52, 231, 207, 0.12); color: var(--honest);
+  box-shadow: inset 0 0 0 1px rgba(52, 231, 207, 0.28);
+}
+
+/* form */
+.pay-form { margin-top: 20px; display: flex; flex-direction: column; }
+.field-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.pay-form .field-label ~ .field-label { margin-top: 16px; }
+.pay-form .input-suffix + .field-label { margin-top: 16px; }
+.input-suffix { position: relative; }
+.input-suffix .input { width: 100%; padding-right: 56px; font-size: 16px; }
+.input-suffix .suffix {
+  position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); font-size: 13px; color: var(--muted); pointer-events: none;
+}
+.pay-form .input { width: 100%; }
+
+.act.block {
+  width: 100%; margin-top: 20px; min-height: 50px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+}
+
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(6, 18, 15, 0.3); border-top-color: #06120f;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* toasts */
+.toast { margin-top: 16px; padding: 13px 15px; border-radius: 12px; font-family: var(--mono); font-size: 12.5px; line-height: 1.6; border: 1px solid; word-break: break-word; }
+.toast.ok { color: var(--honest); border-color: rgba(52, 231, 207, 0.3); background: rgba(52, 231, 207, 0.05); }
+.toast.err { color: #ff8a8a; border-color: rgba(255, 107, 107, 0.32); background: rgba(255, 107, 107, 0.06); }
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+  .act, .seg button, .addr-chip { transition: none; }
+}
 .shielded {
   color: var(--shield); background: rgba(176, 124, 255, 0.12); border-radius: 5px; padding: 1px 7px;
   letter-spacing: 0.04em;
