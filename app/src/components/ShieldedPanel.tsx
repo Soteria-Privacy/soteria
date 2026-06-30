@@ -7,14 +7,23 @@ import {
   myAddress,
   myNotes,
   balance,
+  maxSpendable,
   deposit,
   pay,
   withdraw,
   type Identity,
+  type OwnedNote,
+  type SpendProgress,
 } from "../lib/shielded";
 import { short } from "../lib/soteria";
 
 const toLamports = (sol: string) => BigInt(Math.round(parseFloat(sol) * LAMPORTS_PER_SOL));
+// Full-precision lamports → SOL string (no rounding, so "Max" round-trips exactly).
+const lamportsToSol = (b: bigint): string => {
+  const whole = b / BigInt(LAMPORTS_PER_SOL);
+  const frac = (b % BigInt(LAMPORTS_PER_SOL)).toString().padStart(9, "0").replace(/0+$/, "");
+  return frac ? `${whole}.${frac}` : `${whole}`;
+};
 const FEE = 5000n;
 
 type Tab = "deposit" | "pay" | "withdraw";
@@ -33,11 +42,22 @@ export function ShieldedPanel() {
   const [status, setStatus] = useState<string | null>(null);
 
   const [id, setId] = useState<Identity | null>(null);
+  const [notes, setNotes] = useState<OwnedNote[]>([]);
   const [bal, setBal] = useState<bigint | null>(null);
   const [copied, setCopied] = useState(false);
+  const [progress, setProgress] = useState<SpendProgress | null>(null);
 
   const [amount, setAmount] = useState("");
+  // Exact lamports when the user tapped "Max" (avoids decimal round-trip loss).
+  const [maxLamports, setMaxLamports] = useState<bigint | null>(null);
   const [toAddress, setToAddress] = useState("");
+
+  const setAmountManual = (v: string) => { setAmount(v); setMaxLamports(null); };
+  const fillMax = () => {
+    const m = maxSpendable(notes, FEE);
+    setMaxLamports(m);
+    setAmount(lamportsToSol(m));
+  };
 
   async function unlock() {
     if (!signMessage) { setError("This wallet can't sign messages."); return null; }
@@ -51,23 +71,24 @@ export function ShieldedPanel() {
   }
 
   async function refresh(ident: Identity) {
-    try { setBal(balance(await myNotes(ident))); } catch { setBal(0n); }
+    try { const ns = await myNotes(ident); setNotes(ns); setBal(balance(ns)); }
+    catch { setNotes([]); setBal(0n); }
   }
 
   async function run(fn: (ident: Identity) => Promise<string>) {
     const ident = id ?? (await unlock());
     if (!ident) return;
-    setBusy(true); setError(null); setStatus(null);
+    setBusy(true); setError(null); setStatus(null); setProgress(null);
     try {
       setStatus(await fn(ident));
       await refresh(ident);
     } catch (e) { setError((e as Error).message); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setProgress(null); }
   }
 
   function onSubmit() {
     if (!publicKey) return;
-    const amt = toLamports(amount);
+    const amt = maxLamports ?? toLamports(amount);
     run(async (ident) => {
       if (tab === "deposit") {
         if (!signTransaction) throw new Error("This wallet can't sign transactions.");
@@ -75,10 +96,10 @@ export function ShieldedPanel() {
         return `Deposited — tx ${short(r.signature, 8)}`;
       }
       if (tab === "pay") {
-        const r = await pay({ id: ident, toAddress: toAddress.trim(), amount: amt, fee: FEE });
+        const r = await pay({ id: ident, toAddress: toAddress.trim(), amount: amt, fee: FEE, onProgress: setProgress });
         return `Paid privately — tx ${short(r.signature, 8)}`;
       }
-      const r = await withdraw({ id: ident, toSolAddress: toAddress.trim(), amount: amt, fee: FEE });
+      const r = await withdraw({ id: ident, toSolAddress: toAddress.trim(), amount: amt, fee: FEE, onProgress: setProgress });
       return `Withdrawn — tx ${short(r.signature, 8)}`;
     });
   }
@@ -95,6 +116,10 @@ export function ShieldedPanel() {
   const sol = (b: bigint | null) => (b === null ? "…" : (Number(b) / LAMPORTS_PER_SOL).toFixed(4));
   const needsAddr = tab !== "deposit";
   const canSubmit = Boolean(amount) && (!needsAddr || Boolean(toAddress));
+  const busyLabel =
+    progress?.phase === "consolidating"
+      ? `Combining notes… ${progress.step}/${progress.total}`
+      : LABELS[tab].busy;
 
   return (
     <div className="panel">
@@ -153,12 +178,17 @@ export function ShieldedPanel() {
             <div className="input-suffix">
               <input
                 id="sh-amount"
-                className="input"
+                className={`input ${needsAddr ? "has-max" : ""}`}
                 inputMode="decimal"
                 value={amount}
                 placeholder="0.00"
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmountManual(e.target.value)}
               />
+              {needsAddr && (
+                <button type="button" className="max-btn" onClick={fillMax} disabled={busy || !bal}>
+                  Max
+                </button>
+              )}
               <span className="suffix">SOL</span>
             </div>
 
@@ -178,11 +208,13 @@ export function ShieldedPanel() {
             )}
 
             <button className="act block" disabled={busy || !canSubmit} onClick={onSubmit}>
-              {busy ? <><span className="spinner" aria-hidden="true" />{LABELS[tab].busy}</> : LABELS[tab].primary}
+              {busy ? <><span className="spinner" aria-hidden="true" />{busyLabel}</> : LABELS[tab].primary}
             </button>
             {needsAddr && (
               <p className="sub small">
-                Network fee {(Number(FEE) / LAMPORTS_PER_SOL).toFixed(6)} SOL — paid to the relayer.
+                {progress?.phase === "consolidating"
+                  ? "Combining your notes under the hood so the full amount sends in one go — please keep this tab open."
+                  : `Network fee ${(Number(FEE) / LAMPORTS_PER_SOL).toFixed(6)} SOL per step — paid to the relayer.`}
               </p>
             )}
           </div>

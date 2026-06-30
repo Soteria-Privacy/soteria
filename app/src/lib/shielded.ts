@@ -190,19 +190,107 @@ async function relayTx(opts: {
   return { signature: out.signature };
 }
 
-/** Pay any amount to a shielded address (internal transfer, relayed, with change). */
-export async function pay(opts: { id: Identity; toAddress: string; amount: bigint; fee: bigint }) {
-  const dest = shielded.decodeShieldedAddress(opts.toAddress);
+// ── Auto-consolidation ──────────────────────────────────────────────────────
+// The circuit spends at most 2 notes per tx, so a single pay/withdraw can only
+// move your two largest notes. To let users move their *whole* balance in one
+// action, we transparently merge notes (self-transfers, two-into-one) until the
+// two largest cover the target, then do the real send. Each step is its own
+// relayed tx + proof, so we report progress.
+
+export type SpendPhase = "consolidating" | "sending";
+export interface SpendProgress {
+  phase: SpendPhase;
+  step: number; // 1-based
+  total: number; // consolidation steps + final send
+}
+
+const sortedAmounts = (notes: OwnedNote[]) =>
+  notes.map((n) => n.amount).sort((a, b) => (b > a ? 1 : -1));
+
+const topTwo = (amts: bigint[]) => (amts[0] ?? 0n) + (amts[1] ?? 0n);
+
+/** Most you can send in one action after merging everything down (change → 0).
+ *  Each of the (N−1) merge/send steps burns one `fee`, so subtract them. */
+export function maxSpendable(notes: OwnedNote[], fee: bigint): bigint {
+  const live = notes.filter((n) => n.amount > 0n);
+  if (live.length === 0) return 0n;
+  const total = live.reduce((s, n) => s + n.amount, 0n);
+  const cost = BigInt(Math.max(1, live.length - 1)) * fee;
+  return total > cost ? total - cost : 0n;
+}
+
+/** How many two-into-one merges are needed before the two largest cover target,
+ *  or null if the balance can't reach it even fully consolidated. */
+function mergesNeeded(notes: OwnedNote[], target: bigint, fee: bigint): number | null {
+  const amts = sortedAmounts(notes);
+  let merges = 0;
+  while (topTwo(amts) < target) {
+    if (amts.length < 3) return null;
+    const merged = amts[0] + amts[1] - fee;
+    amts.splice(0, 2);
+    let i = 0;
+    while (i < amts.length && amts[i] > merged) i++;
+    amts.splice(i, 0, merged);
+    merges++;
+  }
+  return merges;
+}
+
+/** Self-transfer of `amount` (two-into-one merge), no nested consolidation. */
+async function internalTransfer(id: Identity, toAddress: string, amount: bigint, fee: bigint) {
+  const dest = shielded.decodeShieldedAddress(toAddress);
   const st = await fetchState();
   const relayer = new PublicKey(st.relayer!);
   return relayTx({
-    id: opts.id, amount: opts.amount, fee: opts.fee, extAmount: 0n,
+    id, amount, fee, extAmount: 0n,
     payRecipientPub: dest.publicKey, payRecipientEnc: dest.encPub, solRecipient: relayer,
   });
 }
 
-/** Withdraw any amount to a regular Solana address (relayed). */
-export async function withdraw(opts: { id: Identity; toSolAddress: string; amount: bigint; fee: bigint }) {
+/** Merge notes until the two largest cover `target`, reporting each step. */
+async function consolidateForTarget(
+  id: Identity,
+  target: bigint,
+  fee: bigint,
+  onProgress?: (p: SpendProgress) => void
+): Promise<void> {
+  const planned = mergesNeeded(await myNotes(id), target, fee);
+  if (planned === null) {
+    const have = balance(await myNotes(id));
+    throw new Error(
+      have < target
+        ? "amount exceeds your shielded balance"
+        : "amount exceeds your balance after fees — try a little less"
+    );
+  }
+  const total = planned + 1; // + the final send
+  for (let step = 0; step < planned; step++) {
+    const notes = await myNotes(id);
+    if (topTwo(sortedAmounts(notes)) >= target) break;
+    const two = [...notes].sort((a, b) => (b.amount > a.amount ? 1 : -1));
+    onProgress?.({ phase: "consolidating", step: step + 1, total });
+    await internalTransfer(id, myAddress(id), two[0].amount + two[1].amount - fee, fee);
+  }
+  onProgress?.({ phase: "sending", step: total, total });
+}
+
+/** Pay any amount to a shielded address (internal transfer, relayed, with change).
+ *  Auto-consolidates first so amounts larger than your two biggest notes work. */
+export async function pay(opts: {
+  id: Identity; toAddress: string; amount: bigint; fee: bigint;
+  onProgress?: (p: SpendProgress) => void;
+}) {
+  await consolidateForTarget(opts.id, opts.amount + opts.fee, opts.fee, opts.onProgress);
+  return internalTransfer(opts.id, opts.toAddress, opts.amount, opts.fee);
+}
+
+/** Withdraw any amount to a regular Solana address (relayed).
+ *  Auto-consolidates first so amounts larger than your two biggest notes work. */
+export async function withdraw(opts: {
+  id: Identity; toSolAddress: string; amount: bigint; fee: bigint;
+  onProgress?: (p: SpendProgress) => void;
+}) {
+  await consolidateForTarget(opts.id, opts.amount + opts.fee, opts.fee, opts.onProgress);
   return relayTx({
     id: opts.id, amount: opts.amount, fee: opts.fee, extAmount: -opts.amount,
     payRecipientPub: null, payRecipientEnc: null, solRecipient: new PublicKey(opts.toSolAddress),
