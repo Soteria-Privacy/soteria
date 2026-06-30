@@ -18,3 +18,5 @@ verification_key.json
 # Tor onion service state — contains the onion private key + hostname.
 deploy/tor/hs/
 deploy/tor/data/
+deploy/tor/hs-app/
+deploy/tor/data-app/
