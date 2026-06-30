@@ -1,0 +1,17 @@
+# Soteria frontend onion mirror.
+#
+# Serves the built SPA (app/dist) over Tor so a user can open the whole app —
+# and therefore make every relayer request — without ever revealing an IP.
+# Pair with the relayer onion (deploy/tor/torrc) and point the app at it.
+# Launch with: bash scripts/onion-app.sh
+
+DataDirectory ./deploy/tor/data-app
+# Serving only; not a SOCKS proxy for outbound traffic.
+SocksPort 0
+
+# Map onion:80 -> the locally-served static build (default 127.0.0.1:8088).
+HiddenServiceDir ./deploy/tor/hs-app
+HiddenServicePort 80 127.0.0.1:8088
+
+HiddenServiceVersion 3
+HiddenServicePoWDefensesEnabled 1

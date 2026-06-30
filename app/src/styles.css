@@ -68,6 +68,24 @@ body {
   padding: 6px 11px; border-radius: 999px; background: rgba(52, 231, 207, 0.06);
 }
 
+/* ── network-privacy badge ───────────────────────────────────────────────── */
+.privacy-badge { position: relative; }
+.tag.pill.priv { cursor: pointer; }
+.tag.pill.priv.ok { color: var(--honest); border-color: rgba(52, 231, 207, 0.4); background: rgba(52, 231, 207, 0.1); }
+.tag.pill.priv.warn { color: #e9a23b; border-color: rgba(233, 162, 59, 0.4); background: rgba(233, 162, 59, 0.08); }
+.priv-pop {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 30; width: 320px;
+  background: var(--panel); border: 1px solid var(--line-2); border-radius: 14px;
+  padding: 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+.priv-text { font-size: 12.5px; line-height: 1.55; color: var(--ink); margin-bottom: 14px; }
+.priv-pop .input { width: 100%; font-size: 12.5px; margin-bottom: 10px; }
+.priv-actions { display: flex; align-items: center; gap: 12px; }
+.act.small { min-height: 34px; padding: 0 14px; font-size: 12px; }
+.priv-hint { font-size: 11px; line-height: 1.5; color: var(--muted); margin-top: 12px; }
+.priv-hint code, .priv-text code { font-family: var(--mono); font-size: 10.5px; color: var(--honest); }
+
 /* ── hero ────────────────────────────────────────────────────────────────── */
 .hero-shell { position: relative; overflow: hidden; border-radius: 26px; padding: 6px; }
 .meteor-field { position: absolute; inset: 0; z-index: 0; pointer-events: none; }

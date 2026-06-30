@@ -1,6 +1,41 @@
 import { stealth, zk } from "@soteria1/sdk";
 
-export const SERVER = import.meta.env.VITE_SOTERIA_SERVER ?? "http://localhost:8787";
+// Relayer endpoint. A privacy-conscious user (running the app over Tor) can
+// point this at the relayer's .onion address at runtime — persisted locally and
+// resolved at load, so all the `${SERVER}/...` fetches route over Tor without a
+// rebuild. Falls back to the build-time env, then localhost.
+const RELAYER_KEY = "soteria.relayer.v1";
+function resolveRelayer(): string {
+  if (typeof localStorage !== "undefined") {
+    const override = localStorage.getItem(RELAYER_KEY);
+    if (override) return override;
+  }
+  return import.meta.env.VITE_SOTERIA_SERVER ?? "http://localhost:8787";
+}
+export const SERVER = resolveRelayer();
+
+/** Override the relayer endpoint (e.g. a .onion) and reload so it takes effect. */
+export function setRelayerEndpoint(url: string): void {
+  const v = url.trim().replace(/\/+$/, "");
+  if (v) localStorage.setItem(RELAYER_KEY, v);
+  else localStorage.removeItem(RELAYER_KEY);
+  if (typeof location !== "undefined") location.reload();
+}
+
+export type PrivacyLevel = "tor" | "partial" | "clearnet";
+const isOnion = (s: string) => /\.onion(?::\d+)?(?:\/|$)/.test(s);
+/** Honest read of the current network-privacy posture: is the app itself served
+ *  over Tor, and is the relayer an onion? Only "both" hides your IP end-to-end. */
+export function connectionPrivacy(): {
+  level: PrivacyLevel; onionApp: boolean; onionRelayer: boolean;
+} {
+  const host = typeof location !== "undefined" ? location.hostname : "";
+  const onionApp = host.endsWith(".onion");
+  const onionRelayer = isOnion(SERVER);
+  const level: PrivacyLevel =
+    onionApp && onionRelayer ? "tor" : onionApp || onionRelayer ? "partial" : "clearnet";
+  return { level, onionApp, onionRelayer };
+}
 export const RPC_URL =
   import.meta.env.VITE_SOLANA_RPC ?? "https://api.devnet.solana.com";
 export const PROGRAM_ID =

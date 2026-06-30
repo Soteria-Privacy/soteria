@@ -7,6 +7,7 @@ import { PayApp } from "./components/PayApp";
 import { History } from "./components/History";
 import { PoolPanel } from "./components/PoolPanel";
 import { ShieldedPanel } from "./components/ShieldedPanel";
+import { PrivacyBadge } from "./components/PrivacyBadge";
 
 type View = "landing" | "app" | "pay" | "history" | "pool" | "shielded";
 type Module = "credential" | "stealth" | "confidential";
@@ -63,6 +64,7 @@ export default function App() {
             {view !== "landing" && (
               <button className="nav-link" onClick={() => setView("landing")}>home</button>
             )}
+            <PrivacyBadge />
             <span className="tag pill">devnet</span>
             <WalletMultiButton />
           </nav>
