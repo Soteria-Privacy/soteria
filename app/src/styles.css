@@ -247,7 +247,14 @@ body {
 .pay-form { margin-top: 20px; display: flex; flex-direction: column; }
 .field-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .pay-form .field-label ~ .field-label { margin-top: 16px; }
-.pay-form .input-suffix + .field-label { margin-top: 16px; }
+.pay-form .input-suffix + .field-label,
+.pay-form .input-suffix + .field-row { margin-top: 16px; }
+.field-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.link-btn {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--honest); background: none; border: none; padding: 0 0 8px; cursor: pointer;
+}
+.link-btn:hover { text-decoration: underline; }
 .input-suffix { position: relative; }
 .input-suffix .input { width: 100%; padding-right: 56px; font-size: 16px; }
 .input-suffix .input.has-max { padding-right: 104px; }

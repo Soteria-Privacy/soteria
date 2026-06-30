@@ -58,6 +58,14 @@ export function ShieldedPanel() {
     setMaxLamports(m);
     setAmount(lamportsToSol(m));
   };
+  const myWallet = () => publicKey?.toBase58() ?? "";
+
+  function selectTab(t: Tab) {
+    setTab(t); setStatus(null); setError(null);
+    // Pay goes to a shielded address; withdraw defaults to your own wallet.
+    if (t === "pay") setToAddress("");
+    else if (t === "withdraw") setToAddress(myWallet());
+  }
 
   async function unlock() {
     if (!signMessage) { setError("This wallet can't sign messages."); return null; }
@@ -166,7 +174,7 @@ export function ShieldedPanel() {
                 role="tab"
                 aria-selected={tab === t}
                 className={tab === t ? "on" : ""}
-                onClick={() => { setTab(t); setStatus(null); setError(null); }}
+                onClick={() => selectTab(t)}
               >
                 {t[0].toUpperCase() + t.slice(1)}
               </button>
@@ -194,9 +202,16 @@ export function ShieldedPanel() {
 
             {needsAddr && (
               <>
-                <label className="field-label" htmlFor="sh-to">
-                  {tab === "pay" ? "Recipient's shielded address" : "Withdraw to"}
-                </label>
+                <div className="field-row">
+                  <label className="field-label" htmlFor="sh-to">
+                    {tab === "pay" ? "Recipient's shielded address" : "Withdraw to"}
+                  </label>
+                  {tab === "withdraw" && toAddress !== myWallet() && (
+                    <button type="button" className="link-btn" onClick={() => setToAddress(myWallet())}>
+                      use my wallet
+                    </button>
+                  )}
+                </div>
                 <input
                   id="sh-to"
                   className="input"
@@ -204,6 +219,9 @@ export function ShieldedPanel() {
                   placeholder={tab === "pay" ? "a Soteria shielded address" : "any Solana wallet address"}
                   onChange={(e) => setToAddress(e.target.value)}
                 />
+                {tab === "withdraw" && toAddress === myWallet() && (
+                  <p className="sub small">Going to your connected wallet — paste a different address to send elsewhere.</p>
+                )}
               </>
             )}
 
