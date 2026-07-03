@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://soteria-app.vercel.app/sitemap.xml
+Sitemap: https://soteriaprivacy.app/sitemap.xml

@@ -1,7 +1,7 @@
 {
-  "name": "Soteria — Private Payments on Solana",
+  "name": "Soteria Private Payments on Solana",
   "short_name": "Soteria",
-  "description": "Solana privacy toolkit: send and receive SOL privately with zero-knowledge proofs — shielded balances, stealth addresses, and selective disclosure.",
+  "description": "A privacy toolkit for Solana. Send and receive SOL without exposing your balance or amounts, using zero-knowledge proofs, stealth addresses, and selective disclosure.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07080f",
