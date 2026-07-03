@@ -1,21 +1,22 @@
-import { motion, type Variants } from "framer-motion";
+import { useRef } from "react";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { LiveGraph } from "./LiveGraph";
 
 const STEPS = [
   {
     n: "01",
     t: "Deposit any amount",
-    d: "Move any amount into one shielded balance. The chain sees a deposit — never how much you hold.",
+    d: "Move funds into one shielded balance. The chain records that a deposit happened, never how much you hold.",
   },
   {
     n: "02",
     t: "Pay anyone, privately",
-    d: "Send any amount to a shielded address. Amounts stay encrypted and your wallet is never the payer — change comes back automatically.",
+    d: "Send to a shielded address with the amount encrypted. Your wallet is never named as the payer, and any change comes back to you automatically.",
   },
   {
     n: "03",
     t: "Withdraw when ready",
-    d: "Take any amount out to a fresh wallet, with no on-chain link to where it came from.",
+    d: "Cash out to a fresh wallet, with no on-chain trail back to where the funds came from.",
   },
 ];
 
@@ -28,7 +29,18 @@ const item: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
 };
 
+const spring = { type: "spring", stiffness: 380, damping: 24 } as const;
+
 export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => void }) {
+  const reduce = useReducedMotion();
+  const stepsRef = useRef<HTMLDivElement>(null);
+
+  const seeHow = () =>
+    stepsRef.current?.scrollIntoView({
+      behavior: reduce ? "auto" : "smooth",
+      block: "center",
+    });
+
   return (
     <section className="lp">
       <div className="lp-hero">
@@ -52,22 +64,35 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
             <span className="accent">privately.</span>
           </motion.h1>
           <motion.p className="lp-lede" variants={item}>
-            Deposit any amount into one shielded balance and pay anyone privately.
-            Amounts stay encrypted, your wallet is never named as the payer, and the
-            chain never sees who paid whom — self-custodial, end to end.
+            Deposit into one shielded balance and pay anyone without revealing the
+            amount. Your wallet is never named as the payer, and the chain never sees
+            who paid whom. Self-custodial, end to end.
           </motion.p>
           <motion.div className="lp-cta" variants={item}>
-            <button className="act" onClick={onPay}>
+            <motion.button
+              className="act"
+              onClick={onPay}
+              whileHover={reduce ? undefined : { y: -2 }}
+              whileTap={reduce ? undefined : { scale: 0.97 }}
+              transition={spring}
+            >
               Open private payments
-            </button>
-            <button className="act ghost" onClick={onPay}>
-              Pay privately
-            </button>
+            </motion.button>
+            <motion.button
+              className="act ghost"
+              onClick={seeHow}
+              whileHover={reduce ? undefined : { y: -2 }}
+              whileTap={reduce ? undefined : { scale: 0.97 }}
+              transition={spring}
+            >
+              See how it works
+            </motion.button>
           </motion.div>
         </motion.div>
       </div>
 
       <motion.div
+        ref={stepsRef}
         className="lp-steps"
         initial="hidden"
         whileInView="show"
@@ -75,7 +100,13 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
         variants={container}
       >
         {STEPS.map((s) => (
-          <motion.div className="lp-step" key={s.n} variants={item}>
+          <motion.div
+            className="lp-step"
+            key={s.n}
+            variants={item}
+            whileHover={reduce ? undefined : { y: -6 }}
+            transition={spring}
+          >
             <span className="lp-step-n">{s.n}</span>
             <h3>{s.t}</h3>
             <p>{s.d}</p>
@@ -83,13 +114,19 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
         ))}
       </motion.div>
 
-      <div className="lp-foot">
-        <div className="lp-trust">
+      <motion.div
+        className="lp-foot"
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, amount: 0.6 }}
+        variants={container}
+      >
+        <motion.div className="lp-trust" variants={item}>
           <span>Self-custodial</span>
           <span>Hidden amounts</span>
           <span>Unlinkable payments</span>
-        </div>
-        <p className="lp-dev">
+        </motion.div>
+        <motion.p className="lp-dev" variants={item}>
           Building an app? The same primitives — stealth payments, ZK disclosure,
           confidential amounts, shielded pools — ship as an{" "}
           <button className="link-inline" onClick={onEnter}>
@@ -99,8 +136,8 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
           <a href="https://github.com/romeoscript/soteria" target="_blank" rel="noreferrer">
             view source
           </a>
-        </p>
-      </div>
+        </motion.p>
+      </motion.div>
     </section>
   );
 }
