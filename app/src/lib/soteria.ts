@@ -41,6 +41,19 @@ export const RPC_URL =
 export const PROGRAM_ID =
   import.meta.env.VITE_SOTERIA_PROGRAM_ID ??
   "9HNLpUVFX61pX759oy1vuMMwQaQaGnK9KgMyhTrDrRGs";
+
+// Single source of truth for which Solana cluster the app targets. Everything
+// user-facing (explorer links, "devnet/mainnet" badges) derives from this, so
+// switching networks is one env var, not a scavenger hunt through components.
+export type Cluster = "devnet" | "mainnet-beta";
+export const CLUSTER: Cluster =
+  (import.meta.env.VITE_SOLANA_CLUSTER as Cluster) ?? "devnet";
+/** Short human label for badges: "mainnet" | "devnet". */
+export const CLUSTER_LABEL = CLUSTER === "mainnet-beta" ? "mainnet" : CLUSTER;
+export const explorerTx = (sig: string) =>
+  `https://explorer.solana.com/tx/${sig}?cluster=${CLUSTER}`;
+export const explorerAddress = (addr: string) =>
+  `https://explorer.solana.com/address/${addr}?cluster=${CLUSTER}`;
 // On-chain group + circuit scope this demo proves membership against.
 export const GROUP_ID = Number(import.meta.env.VITE_SOTERIA_GROUP_ID ?? 0);
 export const EXTERNAL_NULLIFIER = BigInt(

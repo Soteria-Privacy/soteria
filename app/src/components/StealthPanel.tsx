@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { stealth, toB64, short, SERVER } from "../lib/soteria";
+import { stealth, toB64, short, SERVER, CLUSTER_LABEL } from "../lib/soteria";
 
 export function StealthPanel() {
   const [keys, setKeys] = useState<ReturnType<typeof stealth.generateStealthKeys> | null>(null);
@@ -42,7 +42,7 @@ export function StealthPanel() {
         Generate a meta-address you can share publicly. Senders derive a fresh one-time
         address per payment, so your main wallet never appears as the recipient.
       </p>
-      <span className="status">devnet</span>
+      <span className="status">{CLUSTER_LABEL}</span>
 
       <div className="row" style={{ marginTop: 18 }}>
         <button className="act" onClick={makeMeta}>Generate meta-address</button>

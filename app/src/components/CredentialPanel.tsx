@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { zk, relayVerify, GROUP_ID, EXTERNAL_NULLIFIER, SERVER } from "../lib/soteria";
+import { zk, relayVerify, GROUP_ID, EXTERNAL_NULLIFIER, SERVER, CLUSTER_LABEL, explorerTx } from "../lib/soteria";
 
 const WASM = "/credential.wasm";
 const ZKEY = "/credential_final.zkey";
@@ -59,7 +59,7 @@ export function CredentialPanel() {
         holder list — without revealing which member you are. A scoped nullifier stops
         you from acting twice.
       </p>
-      <span className="status">devnet · relayed</span>
+      <span className="status">{CLUSTER_LABEL} · relayed</span>
 
       <div className="row" style={{ marginTop: 18 }}>
         <div className="field">
@@ -87,7 +87,7 @@ export function CredentialPanel() {
         <div className="readout ok" style={{ marginTop: 10 }}>
           <span className="ok">verified on-chain · </span>
           <a
-            href={`https://explorer.solana.com/tx/${status.signature}?cluster=devnet`}
+            href={explorerTx(status.signature)}
             target="_blank"
             rel="noreferrer"
           >

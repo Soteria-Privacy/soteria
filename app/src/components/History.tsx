@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getActivity, onActivityChange, type Activity } from "../lib/payStore";
 import { fmtSol } from "../lib/stealthPay";
-import { short } from "../lib/soteria";
+import { short, explorerTx } from "../lib/soteria";
 
 const STATUS: Record<Activity["status"], { label: string; cls: string }> = {
   sent: { label: "sent", cls: "k" },
@@ -70,7 +70,7 @@ export function History({ onPay }: { onPay: () => void }) {
                 <span className={`st ${STATUS[i.status].cls}`}>{STATUS[i.status].label}</span>
                 <span className="t k">{when(i.ts)}</span>
                 {i.sig ? (
-                  <a className="lnk" href={`https://explorer.solana.com/tx/${i.sig}?cluster=devnet`} target="_blank" rel="noreferrer">↗</a>
+                  <a className="lnk" href={explorerTx(i.sig)} target="_blank" rel="noreferrer">↗</a>
                 ) : (
                   <span className="lnk" />
                 )}

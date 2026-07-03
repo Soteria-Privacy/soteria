@@ -15,7 +15,7 @@ import {
   type OwnedNote,
   type SpendProgress,
 } from "../lib/shielded";
-import { short } from "../lib/soteria";
+import { short, CLUSTER_LABEL } from "../lib/soteria";
 
 const toLamports = (sol: string) => BigInt(Math.round(parseFloat(sol) * LAMPORTS_PER_SOL));
 // Full-precision lamports → SOL string (no rounding, so "Max" round-trips exactly).
@@ -199,7 +199,7 @@ export function ShieldedPanel() {
     <div className="panel">
       <div className="panel-head">
         <h3>Private payments</h3>
-        <span className="status">devnet</span>
+        <span className="status">{CLUSTER_LABEL}</span>
       </div>
       <p className="sub">
         Deposit into one private balance and pay anyone without revealing the amount.

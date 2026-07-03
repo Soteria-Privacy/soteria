@@ -10,7 +10,7 @@ import {
   fmtSol,
   type StealthKeys,
 } from "../lib/stealthPay";
-import { stealth, short, RPC_URL } from "../lib/soteria";
+import { stealth, short, RPC_URL, explorerTx } from "../lib/soteria";
 import {
   saveIdentity,
   loadIdentity,
@@ -222,10 +222,10 @@ function Receive() {
                       <button className="mini" onClick={() => workerRef.current?.postMessage({ type: "sweepOne", address: it.address })}>sweep</button>
                     )}
                     {it.status === "sweeping" && <span className="k">arriving…</span>}
-                    {it.status === "swept" && (
+                    {it.status === "swept" && it.sig && (
                       <a
                         className="ok"
-                        href={`https://explorer.solana.com/tx/${it.sig}?cluster=devnet`}
+                        href={explorerTx(it.sig)}
                         target="_blank" rel="noreferrer"
                       >arrived ↗</a>
                     )}
@@ -321,7 +321,7 @@ function Send() {
           <div><span className="k">sent to </span><span className="shielded">{short(result.stealthAddress)}</span> (one-time)</div>
           <div>
             <span className="k">tx </span>
-            <a href={`https://explorer.solana.com/tx/${result.signature}?cluster=devnet`} target="_blank" rel="noreferrer">
+            <a href={explorerTx(result.signature)} target="_blank" rel="noreferrer">
               {short(result.signature)} ↗
             </a>
           </div>

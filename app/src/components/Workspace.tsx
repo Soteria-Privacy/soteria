@@ -3,6 +3,7 @@ import { BorderBeam } from "./ui/border-beam";
 import { StealthPanel } from "./StealthPanel";
 import { CredentialPanel } from "./CredentialPanel";
 import { ConfidentialPanel } from "./ConfidentialPanel";
+import { CLUSTER_LABEL, PROGRAM_ID, short } from "../lib/soteria";
 
 const MODULES = [
   { id: "credential", name: "Selective disclosure", sub: "prove membership, hide identity", state: "live" },
@@ -43,7 +44,7 @@ export function Workspace({ tab, setTab }: { tab: Id; setTab: (id: Id) => void }
           </motion.button>
         ))}
         <div className="side-foot">
-          devnet · program <span className="mono-faint">9HNL…rRGs</span>
+          {CLUSTER_LABEL} · program <span className="mono-faint">{short(PROGRAM_ID, 4)}</span>
         </div>
       </aside>
 

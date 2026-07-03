@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SERVER, short } from "../lib/soteria";
+import { SERVER, short, CLUSTER_LABEL, explorerAddress } from "../lib/soteria";
 
 interface DemoResult {
   ok: boolean;
@@ -59,7 +59,7 @@ export function ConfidentialPanel() {
         while keeping a mint-level auditor key for compliance. The transaction graph
         stays public — only the numbers are shielded.
       </p>
-      <span className="status">devnet · live</span>
+      <span className="status">{CLUSTER_LABEL} · live</span>
 
       <div className="row" style={{ marginTop: 18 }}>
         <div className="field">
@@ -74,7 +74,7 @@ export function ConfidentialPanel() {
       <div className="row">
         <button className="act" onClick={runDemo} disabled={status.kind === "busy"}>
           {status.kind === "busy"
-            ? "Running on devnet… (~30s)"
+            ? `Running on ${CLUSTER_LABEL}… (~30s)`
             : "Run confidential transfer"}
         </button>
       </div>
@@ -111,7 +111,7 @@ export function ConfidentialPanel() {
           <div>
             <span className="k">mint </span>
             <a
-              href={`https://explorer.solana.com/address/${status.result.mint}?cluster=devnet`}
+              href={explorerAddress(status.result.mint)}
               target="_blank"
               rel="noreferrer"
             >
@@ -132,7 +132,7 @@ export function ConfidentialPanel() {
       )}
 
       <p className="hint">
-        The operator relays a full Token-2022 confidential transfer on devnet: the
+        The operator relays a full Token-2022 confidential transfer on {CLUSTER_LABEL}: the
         amount is encrypted on-chain (twisted ElGamal) and verified with ZK proofs,
         yet the recipient decrypts the exact value. Account keys are derived from the
         owner's signature, so they're recoverable and never stored.
