@@ -221,8 +221,36 @@ body {
 .panel-head .status { margin-top: 0; }
 .sub.small { font-size: 12.5px; margin-top: 7px; color: var(--muted); }
 
-.connect-cta { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
-.connect-cta .act.block { max-width: 320px; }
+.connect-cta { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.connect-cta .act.block { max-width: none; }
+.connect-cta .sub.small { text-align: center; }
+
+/* private-payments gate — assurance list shown before wallet connect / unlock */
+.sh-gate { margin-top: 24px; }
+.assure {
+  list-style: none; display: grid; gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+}
+.assure-item { display: flex; gap: 13px; align-items: flex-start; padding: 15px 17px; background: var(--void); }
+.assure-ic {
+  display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; margin-top: 1px;
+  color: var(--honest); border-radius: 9px;
+  background: rgba(52, 231, 207, 0.08); border: 1px solid rgba(52, 231, 207, 0.2);
+}
+.assure-t { display: block; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+.assure-d { display: block; color: var(--muted); font-size: 12.75px; line-height: 1.55; margin-top: 3px; }
+
+/* branded connect button inside the gate (distinct from the small nav pill) */
+.connect-cta .wallet-adapter-button {
+  height: 50px !important; width: 100% !important; justify-content: center !important;
+  font-family: var(--display) !important; font-weight: 600 !important; font-size: 14px !important;
+  letter-spacing: 0 !important; background: var(--honest) !important; color: #06120f !important;
+  border: 1px solid transparent !important; border-radius: 12px !important; padding: 0 24px !important;
+  box-shadow: 0 6px 22px rgba(52, 231, 207, 0.16) !important;
+}
+.connect-cta .wallet-adapter-button:not([disabled]):hover {
+  background: #4af3dc !important; border-color: transparent !important;
+}
 
 /* balance hero */
 .balance-hero {
@@ -245,18 +273,21 @@ body {
 .addr-chip-cta { color: var(--honest); font-weight: 600; }
 .addr-chip.copied { border-color: rgba(52, 231, 207, 0.45); }
 
-/* segmented control */
-.seg {
+/* segmented control — full-width tablist inside the private-payments panel.
+   Scoped to [role=tablist] so the older pill .seg (used by PayApp/History)
+   doesn't override it by source order. */
+.seg[role="tablist"] {
   display: flex; gap: 4px; margin-top: 24px; padding: 4px;
   background: #05060c; border: 1px solid var(--line); border-radius: 13px;
 }
-.seg button {
+.seg[role="tablist"] button {
   flex: 1; cursor: pointer; border: none; background: transparent; color: var(--muted); min-height: 42px;
   font-family: var(--display); font-weight: 600; font-size: 13.5px; padding: 9px 12px; border-radius: 9px;
+  text-transform: none; letter-spacing: -0.005em;
   transition: background 0.18s, color 0.18s, box-shadow 0.18s;
 }
-.seg button:hover { color: var(--ink); }
-.seg button.on {
+.seg[role="tablist"] button:hover { color: var(--ink); }
+.seg[role="tablist"] button.on {
   background: rgba(52, 231, 207, 0.12); color: var(--honest);
   box-shadow: inset 0 0 0 1px rgba(52, 231, 207, 0.28);
 }
@@ -268,6 +299,16 @@ body {
 .pay-form .input-suffix + .field-label,
 .pay-form .input-suffix + .field-row { margin-top: 16px; }
 .field-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.field-avail {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; color: var(--muted);
+  white-space: nowrap;
+}
+.field-avail strong { color: var(--ink); font-weight: 600; }
+.input.invalid, .input.invalid:focus {
+  border-color: rgba(255, 107, 107, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.14) !important;
+}
+.sub.small.err-hint { color: #ff8a8a; }
 .link-btn {
   font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--honest); background: none; border: none; padding: 0 0 8px; cursor: pointer;
@@ -329,6 +370,59 @@ body {
   letter-spacing: 0.04em; transition: border-color 0.2s !important;
 }
 .wallet-adapter-button:not([disabled]):hover { background: var(--void-2) !important; border-color: var(--shield) !important; }
+
+/* ── wallet adapter modal restyle (brand-matched) ────────────────────────── */
+.wallet-adapter-modal-overlay {
+  background: rgba(4, 5, 10, 0.74) !important;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.wallet-adapter-modal-wrapper {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 42%), var(--panel) !important;
+  border: 1px solid var(--line-2) !important; border-radius: 20px !important;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6) !important;
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  max-width: 420px !important; padding: 26px 22px 20px !important;
+  font-family: var(--display) !important;
+}
+.wallet-adapter-modal-title {
+  font-family: var(--display) !important; font-size: 19px !important; font-weight: 600 !important;
+  letter-spacing: -0.01em !important; line-height: 1.32 !important; color: var(--ink) !important;
+  text-align: left !important; padding: 2px 44px 0 6px !important; margin: 0 0 18px !important;
+}
+.wallet-adapter-modal-button-close {
+  top: 20px !important; right: 20px !important; width: 34px !important; height: 34px !important;
+  padding: 0 !important; background: rgba(255, 255, 255, 0.05) !important; border-radius: 999px !important;
+  transition: background 0.18s !important;
+}
+.wallet-adapter-modal-button-close:hover { background: rgba(255, 255, 255, 0.1) !important; }
+.wallet-adapter-modal-button-close svg { width: 14px !important; height: 14px !important; fill: var(--muted) !important; transition: fill 0.18s !important; }
+.wallet-adapter-modal-button-close:hover svg { fill: var(--ink) !important; }
+
+.wallet-adapter-modal-list { margin: 0 !important; display: flex !important; flex-direction: column; gap: 6px; }
+.wallet-adapter-modal-list .wallet-adapter-button {
+  height: 54px !important; width: 100% !important; padding: 0 16px !important;
+  background: rgba(255, 255, 255, 0.025) !important; border: 1px solid var(--line) !important;
+  border-radius: 13px !important; color: var(--ink) !important;
+  font-family: var(--display) !important; font-weight: 600 !important; font-size: 14.5px !important;
+  letter-spacing: 0 !important; transition: background 0.16s, border-color 0.16s !important;
+}
+.wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover {
+  background: rgba(52, 231, 207, 0.06) !important; border-color: rgba(52, 231, 207, 0.32) !important;
+}
+/* trailing "Detected" label (default markup puts it in a bare span) */
+.wallet-adapter-modal-list .wallet-adapter-button span {
+  margin-left: auto !important; font-family: var(--mono) !important; font-size: 10.5px !important;
+  letter-spacing: 0.08em !important; text-transform: uppercase !important;
+  color: var(--muted) !important; font-weight: 400 !important; opacity: 1 !important;
+}
+/* the wallet icon is also a span — keep it left, natural size */
+.wallet-adapter-modal-list .wallet-adapter-button .wallet-adapter-button-start-icon {
+  margin: 0 12px 0 0 !important; width: 28px !important; height: 28px !important; text-transform: none !important;
+}
+.wallet-adapter-modal-list .wallet-adapter-button-start-icon img,
+.wallet-adapter-modal-list .wallet-adapter-button-start-icon svg { width: 28px !important; height: 28px !important; }
+.wallet-adapter-modal-list-more { color: var(--honest) !important; }
+.wallet-adapter-modal-list-more svg { fill: var(--honest) !important; }
 
 /* ── brand button + nav ──────────────────────────────────────────────────── */
 .brand { background: none; border: none; padding: 0; cursor: pointer; text-align: left; }
@@ -482,7 +576,11 @@ a.act { text-decoration: none; display: inline-flex; align-items: center; }
 }
 
 /* ── private payments ─────────────────────────────────────────────── */
-.pay { max-width: 760px; margin: 0 auto; }
+.pay {
+  max-width: 760px; margin: 0 auto;
+  min-height: calc(100vh - 210px);
+  display: flex; flex-direction: column; justify-content: center;
+}
 .pay-head { text-align: center; margin-bottom: 22px; }
 .pay-head h2 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
 .pay-head .sub { color: var(--muted); font-size: 14.5px; max-width: 56ch; margin: 12px auto 0; }
@@ -636,7 +734,6 @@ a.act { text-decoration: none; display: inline-flex; align-items: center; }
 .feed .pay-status { margin-left: auto; display: inline-flex; align-items: center; }
 
 /* ── payment history ──────────────────────────────────────────────── */
-.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .hist-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
 .hist-stat { display: flex; flex-direction: column; }
 .hist-stat-n { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; color: var(--honest); }

@@ -65,7 +65,7 @@ export default function App() {
               <button className="nav-link" onClick={() => setView("landing")}>home</button>
             )}
             <PrivacyBadge />
-            <span className="tag pill">devnet</span>
+            {/* <span className="tag pill">devnet</span> */}
             <WalletMultiButton />
           </nav>
         </header>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
@@ -25,6 +25,9 @@ const lamportsToSol = (b: bigint): string => {
   return frac ? `${whole}.${frac}` : `${whole}`;
 };
 const FEE = 5000n;
+// Kept back from a "Max" deposit so the wallet can still cover the transaction
+// fee (the wallet is fee payer). Generous margin over the ~5000-lamport base fee.
+const DEPOSIT_RESERVE = 20_000n;
 
 type Tab = "deposit" | "pay" | "withdraw";
 const LABELS: Record<Tab, { primary: string; busy: string }> = {
@@ -32,6 +35,36 @@ const LABELS: Record<Tab, { primary: string; busy: string }> = {
   pay: { primary: "Pay privately", busy: "Proving & paying…" },
   withdraw: { primary: "Withdraw", busy: "Proving & withdrawing…" },
 };
+
+const ASSURE: { ic: ReactNode; t: string; d: string }[] = [
+  {
+    ic: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+        <path d="M12 3l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V6l7-3z" strokeLinejoin="round" />
+      </svg>
+    ),
+    t: "Hidden amounts",
+    d: "Balances and transfers stay encrypted on-chain — no one can read how much you hold or move.",
+  },
+  {
+    ic: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+        <path d="M9 15l6-6M8.5 8.5l1.4-1.4a3.5 3.5 0 015 5L13.5 13.5M15.5 15.5l-1.4 1.4a3.5 3.5 0 01-5-5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    t: "Unlinkable payments",
+    d: "Your wallet is never named as the payer, so nothing ties a payment back to you.",
+  },
+  {
+    ic: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+        <circle cx="8" cy="15" r="4" /><path d="M11 12l7-7M15 5h3v3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+    t: "Self-custodial",
+    d: "Keys derive on your device the moment you sign, and never leave it.",
+  },
+];
 
 export function ShieldedPanel() {
   const { connection } = useConnection();
@@ -44,6 +77,7 @@ export function ShieldedPanel() {
   const [id, setId] = useState<Identity | null>(null);
   const [notes, setNotes] = useState<OwnedNote[]>([]);
   const [bal, setBal] = useState<bigint | null>(null);
+  const [walletBal, setWalletBal] = useState<bigint | null>(null);
   const [copied, setCopied] = useState(false);
   const [progress, setProgress] = useState<SpendProgress | null>(null);
 
@@ -52,9 +86,26 @@ export function ShieldedPanel() {
   const [maxLamports, setMaxLamports] = useState<bigint | null>(null);
   const [toAddress, setToAddress] = useState("");
 
+  // Keep the connected wallet's SOL balance handy so deposits can offer a "Max"
+  // and we can catch "not enough SOL" before the transaction ever simulates.
+  useEffect(() => {
+    if (!publicKey) { setWalletBal(null); return; }
+    let live = true;
+    connection.getBalance(publicKey)
+      .then((n) => { if (live) setWalletBal(BigInt(n)); })
+      .catch(() => { if (live) setWalletBal(null); });
+    return () => { live = false; };
+  }, [publicKey, connection, busy]);
+
+  // Most that can be deposited/spent given fees, per tab.
+  const depositMax = () =>
+    walletBal !== null && walletBal > DEPOSIT_RESERVE ? walletBal - DEPOSIT_RESERVE : 0n;
+  const spendMax = () => maxSpendable(notes, FEE);
+  const availableMax = () => (tab === "deposit" ? depositMax() : spendMax());
+
   const setAmountManual = (v: string) => { setAmount(v); setMaxLamports(null); };
   const fillMax = () => {
-    const m = maxSpendable(notes, FEE);
+    const m = availableMax();
     setMaxLamports(m);
     setAmount(lamportsToSol(m));
   };
@@ -123,7 +174,22 @@ export function ShieldedPanel() {
 
   const sol = (b: bigint | null) => (b === null ? "…" : (Number(b) / LAMPORTS_PER_SOL).toFixed(4));
   const needsAddr = tab !== "deposit";
-  const canSubmit = Boolean(amount) && (!needsAddr || Boolean(toAddress));
+
+  // Amount the user is about to send, in lamports (0 when blank/invalid).
+  const enteredLamports = (): bigint => {
+    if (maxLamports !== null) return maxLamports;
+    const n = parseFloat(amount);
+    if (!isFinite(n) || n <= 0) return 0n;
+    return BigInt(Math.round(n * LAMPORTS_PER_SOL));
+  };
+  const entered = enteredLamports();
+  // For deposit we know the wallet balance up front; for pay/withdraw the max is
+  // the shielded balance. Null means "not known yet" (don't block on it).
+  const knownMax = tab === "deposit" ? (walletBal === null ? null : depositMax()) : spendMax();
+  const overMax = knownMax !== null && entered > knownMax;
+  const showMax = tab === "deposit" ? availableMax() > 0n : Boolean(bal);
+  const canSubmit =
+    entered > 0n && !overMax && (!needsAddr || Boolean(toAddress));
   const busyLabel =
     progress?.phase === "consolidating"
       ? `Combining notes… ${progress.step}/${progress.total}`
@@ -136,17 +202,35 @@ export function ShieldedPanel() {
         <span className="status">devnet</span>
       </div>
       <p className="sub">
-        Deposit <strong>any amount</strong> into one private balance. Pay anyone privately —
-        amounts are <strong>encrypted</strong>, change comes back automatically, and the chain
-        never sees who paid whom or how much.
+        Deposit into one private balance and pay anyone without revealing the amount.
+        Balances stay <strong>encrypted</strong>, change returns to you automatically, and
+        the chain never sees who paid whom.
       </p>
 
-      {!publicKey ? (
-        <div className="connect-cta"><WalletMultiButton /></div>
-      ) : !id ? (
-        <div className="connect-cta">
-          <button className="act block" onClick={unlock}>Unlock my shielded balance</button>
-          <p className="sub small">Sign once to derive your shielded keys — nothing leaves your device.</p>
+      {!id ? (
+        <div className="sh-gate">
+          <ul className="assure">
+            {ASSURE.map((a) => (
+              <li className="assure-item" key={a.t}>
+                <span className="assure-ic" aria-hidden="true">{a.ic}</span>
+                <span>
+                  <span className="assure-t">{a.t}</span>
+                  <span className="assure-d">{a.d}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {!publicKey ? (
+            <div className="connect-cta">
+              <WalletMultiButton />
+              <p className="sub small">Connect a Solana wallet to open your shielded balance.</p>
+            </div>
+          ) : (
+            <div className="connect-cta">
+              <button className="act block" onClick={unlock}>Unlock my shielded balance</button>
+              <p className="sub small">Sign once to derive your shielded keys. Nothing leaves your device.</p>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -182,23 +266,38 @@ export function ShieldedPanel() {
           </div>
 
           <div className="pay-form">
-            <label className="field-label" htmlFor="sh-amount">Amount</label>
+            <div className="field-row">
+              <label className="field-label" htmlFor="sh-amount">Amount</label>
+              <span className="field-avail">
+                {tab === "deposit"
+                  ? <>Wallet <strong>{sol(walletBal)}</strong> SOL</>
+                  : <>Shielded <strong>{sol(bal)}</strong> SOL</>}
+              </span>
+            </div>
             <div className="input-suffix">
               <input
                 id="sh-amount"
-                className={`input ${needsAddr ? "has-max" : ""}`}
+                className={`input ${showMax ? "has-max" : ""} ${overMax ? "invalid" : ""}`}
                 inputMode="decimal"
                 value={amount}
                 placeholder="0.00"
+                aria-invalid={overMax}
                 onChange={(e) => setAmountManual(e.target.value)}
               />
-              {needsAddr && (
-                <button type="button" className="max-btn" onClick={fillMax} disabled={busy || !bal}>
+              {showMax && (
+                <button type="button" className="max-btn" onClick={fillMax} disabled={busy}>
                   Max
                 </button>
               )}
               <span className="suffix">SOL</span>
             </div>
+            {overMax && (
+              <p className="sub small err-hint">
+                {tab === "deposit"
+                  ? `Not enough SOL — your wallet has ${sol(walletBal)} SOL (a little is kept back for the network fee).`
+                  : `More than your shielded balance — you can send up to ${sol(knownMax)} SOL.`}
+              </p>
+            )}
 
             {needsAddr && (
               <>
