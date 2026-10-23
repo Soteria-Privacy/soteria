@@ -179,7 +179,7 @@ function Receive() {
             <button className="link-inline" onClick={forget}>forget on this device</button>
           </div>
           <div className="qr-wrap">
-            <div className="qr"><QRCodeSVG value={link} size={148} bgColor="transparent" fgColor="#cdeee7" /></div>
+            <div className="qr"><QRCodeSVG value={link} size={148} bgColor="transparent" fgColor="#e9e2ff" /></div>
             <div className="qr-side">
               <p className="sub">Share this link or QR. Anyone can pay you; only you can see and spend it.</p>
               <div className="linkbox">

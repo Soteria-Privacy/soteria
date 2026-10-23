@@ -68,7 +68,7 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
 
   const denomSol = poolState ? Number(poolState.denomination) / LAMPORTS_PER_SOL : null;
   const anonSet = poolState?.anonymitySet ?? 0;
-  const anonColor = anonSet >= SAFE_ANONYMITY_SET ? "#34e7cf" : anonSet <= 1 ? "#ff6b6b" : "#ffb454";
+  const anonColor = anonSet >= SAFE_ANONYMITY_SET ? "var(--honest)" : anonSet <= 1 ? "#ff6b6b" : "#ffb454";
   const anonLabel =
     anonSet >= SAFE_ANONYMITY_SET
       ? "healthy crowd to hide in"
@@ -208,7 +208,7 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
 
           {link && (
             <div className="readout" style={{ marginTop: 16 }}>
-              <div style={{ color: "#34e7cf", marginBottom: 4 }}>✓ Deposited.</div>
+              <div style={{ color: "var(--honest)", marginBottom: 4 }}>✓ Deposited.</div>
               <div className="sub" style={{ marginBottom: 10 }}>
                 {linkEncrypted
                   ? "🔒 Encrypted to the recipient — safe to send over any channel."
@@ -279,7 +279,7 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
             onChange={(e) => setNoteInput(e.target.value)}
           />
           {needsDecrypt && (
-            <div className="sub" style={{ marginBottom: 12, color: "#b07cff" }}>
+            <div className="sub" style={{ marginBottom: 12, color: "var(--shield)" }}>
               🔒 Encrypted note — you'll be asked to sign to decrypt it with your address.
             </div>
           )}
@@ -301,7 +301,7 @@ export function PoolPanel({ initialMode }: { initialMode?: Mode }) {
 
           {withdrawSig && (
             <div className="readout" style={{ marginTop: 16 }}>
-              <div style={{ color: "#34e7cf" }}>✓ Claimed to {short(recipient, 6)}</div>
+              <div style={{ color: "var(--honest)" }}>✓ Claimed to {short(recipient, 6)}</div>
               <div style={{ marginTop: 8 }}>
                 <span className="k">claim tx </span>
                 {short(withdrawSig, 8)}

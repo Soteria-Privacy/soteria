@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion, type TargetAndTransition } from "framer-motion";
 
-const HONEST = "#34e7cf";
-const SHIELD = "#b07cff";
-const MUTED = "#757ca6";
+const HONEST = "#5aa8ff";
+const SHIELD = "#ff5fd8";
+const MUTED = "#9a93c7";
 
 type P = { x: number; y: number };
 const N: Record<string, P> = {
@@ -101,7 +101,7 @@ export function LiveGraph() {
                 />
               )}
               <motion.circle
-                cx={x} cy={y} fill="#05060c" stroke={color} strokeWidth={shielded ? 1.6 : 1.2}
+                cx={x} cy={y} fill="#080420" stroke={color} strokeWidth={shielded ? 1.6 : 1.2}
                 initial={{ r: 0 }} animate={{ r: shielded ? 8 : 6 }}
                 transition={{ delay, type: "spring", stiffness: 300, damping: 17 }}
               />

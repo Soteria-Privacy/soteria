@@ -1,6 +1,7 @@
-import { useRef } from "react";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { useRef, type PointerEvent } from "react";
 import { LiveGraph } from "./LiveGraph";
+import { DotWordmark } from "./landing/DotWordmark";
+import { useLandingMotion } from "./landing/useLandingMotion";
 
 const STEPS = [
   {
@@ -20,124 +21,154 @@ const STEPS = [
   },
 ];
 
-const container: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1, delayChildren: 0.12 } },
-};
-const item: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
+const PRIMITIVES = [
+  {
+    t: "Shielded balance",
+    d: "One private balance for any amount. Deposits, payments and change stay encrypted end to end.",
+  },
+  {
+    t: "Stealth receiving",
+    d: "One-time receive addresses, so your main wallet never shows up as the recipient.",
+  },
+  {
+    t: "ZK selective disclosure",
+    d: "Prove you're eligible or on an allowlist without revealing which identity, verified on-chain with Groth16.",
+  },
+  {
+    t: "Confidential amounts",
+    d: "Token-2022 confidential transfers with a mint-level auditor key.",
+    note: "localnet",
+  },
+];
 
-const spring = { type: "spring", stiffness: 380, damping: 24 } as const;
+function trackGlow(e: PointerEvent<HTMLElement>) {
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty("--gx", `${e.clientX - r.left}px`);
+  e.currentTarget.style.setProperty("--gy", `${e.clientY - r.top}px`);
+}
 
 export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => void }) {
-  const reduce = useReducedMotion();
-  const stepsRef = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLElement>(null);
+  const stepsRef = useRef<HTMLElement>(null);
+  useLandingMotion(root);
 
-  const seeHow = () =>
-    stepsRef.current?.scrollIntoView({
-      behavior: reduce ? "auto" : "smooth",
-      block: "center",
-    });
+  const seeHow = () => {
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    stepsRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
+  };
 
   return (
-    <section className="lp">
+    <section className="lp" ref={root}>
       <div className="lp-hero">
-        <motion.div
-          className="lp-graph"
-          initial={{ opacity: 0, scale: 1.06 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.6, ease: "easeOut" }}
-        >
-          <LiveGraph />
-        </motion.div>
-        <div className="lp-scrim" />
+        <div className="lp-hero-inner">
+          <div className="lp-pill">
+            <span className="lp-pill-dot" />
+            Private payments on Solana
+          </div>
 
-        <motion.div className="lp-copy" variants={container} initial="hidden" animate="show">
-          <motion.div className="lp-eyebrow" variants={item}>
-            <span className="tick" />Private payments on Solana
-          </motion.div>
-          <motion.h1 className="lp-title" variants={item}>
+          <DotWordmark className="lp-wordmark" />
+          <p className="lp-kicker">
+            <span className="lp-kicker-text">PRIVACY TOOLKIT</span>
+          </p>
+
+          <h1 className="lp-title">
             Get paid on Solana,
             <br />
             <span className="accent">privately.</span>
-          </motion.h1>
-          <motion.p className="lp-lede" variants={item}>
-            Deposit into one shielded balance and pay anyone without revealing the
-            amount. Your wallet is never named as the payer, and the chain never sees
-            who paid whom. Self-custodial, end to end.
-          </motion.p>
-          <motion.div className="lp-cta" variants={item}>
-            <motion.button
-              className="act"
-              onClick={onPay}
-              whileHover={reduce ? undefined : { y: -2 }}
-              whileTap={reduce ? undefined : { scale: 0.97 }}
-              transition={spring}
-            >
-              Open private payments
-            </motion.button>
-            <motion.button
-              className="act ghost"
-              onClick={seeHow}
-              whileHover={reduce ? undefined : { y: -2 }}
-              whileTap={reduce ? undefined : { scale: 0.97 }}
-              transition={spring}
-            >
+          </h1>
+          <p className="lp-lede">
+            Deposit into one shielded balance and pay anyone without revealing the amount.
+            Your wallet is never named as the payer, and the chain never sees who paid whom.
+            Self-custodial, end to end.
+          </p>
+          <div className="lp-cta">
+            <button className="lp-btn lp-btn-primary" onClick={onPay}>
+              Open private payments <span aria-hidden="true">→</span>
+            </button>
+            <button className="lp-btn lp-btn-ghost" onClick={seeHow}>
               See how it works
-            </motion.button>
-          </motion.div>
-        </motion.div>
+            </button>
+          </div>
+        </div>
+
+        <div className="lp-scroll" aria-hidden="true">
+          <span className="lp-scroll-dot" />
+        </div>
       </div>
 
-      <motion.div
-        ref={stepsRef}
-        className="lp-steps"
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.4 }}
-        variants={container}
-      >
-        {STEPS.map((s) => (
-          <motion.div
-            className="lp-step"
-            key={s.n}
-            variants={item}
-            whileHover={reduce ? undefined : { y: -6 }}
-            transition={spring}
-          >
-            <span className="lp-step-n">{s.n}</span>
-            <h3>{s.t}</h3>
-            <p>{s.d}</p>
-          </motion.div>
-        ))}
-      </motion.div>
+      <section className="lp-section" ref={stepsRef} aria-labelledby="lp-how">
+        <p className="lp-eyebrow">How it works</p>
+        <h2 className="lp-h2" id="lp-how">Three steps. Nothing left on the record.</h2>
+        <div className="lp-rail" aria-hidden="true">
+          <span className="lp-rail-fill" />
+        </div>
+        <ol className="lp-steps">
+          {STEPS.map((s) => (
+            <li className="lp-step" key={s.n} onPointerMove={trackGlow}>
+              <span className="lp-step-n">{s.n}</span>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
 
-      <motion.div
-        className="lp-foot"
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, amount: 0.6 }}
-        variants={container}
-      >
-        <motion.div className="lp-trust" variants={item}>
-          <span>Self-custodial</span>
-          <span>Hidden amounts</span>
-          <span>Unlinkable payments</span>
-        </motion.div>
-        <motion.p className="lp-dev" variants={item}>
-          Building an app? The same primitives — stealth payments, ZK disclosure,
-          confidential amounts, shielded pools — ship as an{" "}
-          <button className="link-inline" onClick={onEnter}>
-            open SDK
-          </button>
-          <span className="sep">·</span>
-          <a href="https://github.com/romeoscript/soteria" target="_blank" rel="noreferrer">
-            view source
-          </a>
-        </motion.p>
-      </motion.div>
+      <section className="lp-section lp-ledger" aria-labelledby="lp-ledger">
+        <div className="lp-ledger-copy">
+          <p className="lp-eyebrow">What the chain sees</p>
+          <h2 className="lp-h2" id="lp-ledger">A transfer happened. That's all it learns.</h2>
+          <p className="lp-body">
+            Explorers can see that funds moved. The amount and the link between payer and
+            payee stay encrypted. When you need to prove a payment, you choose what to
+            disclose and to whom.
+          </p>
+        </div>
+        <div className="lp-ledger-panel">
+          <LiveGraph />
+        </div>
+      </section>
+
+      <section className="lp-section" aria-labelledby="lp-prims">
+        <p className="lp-eyebrow">Under the hood</p>
+        <h2 className="lp-h2" id="lp-prims">Privacy primitives, shipped as an open SDK.</h2>
+        <ul className="lp-prims">
+          {PRIMITIVES.map((p) => (
+            <li className="lp-prim" key={p.t} onPointerMove={trackGlow}>
+              <h3>
+                {p.t}
+                {p.note && <span className="lp-prim-note">{p.note}</span>}
+              </h3>
+              <p>{p.d}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="lp-final" aria-labelledby="lp-final">
+        <div className="lp-final-inner">
+          <h2 className="lp-h2" id="lp-final">Your balance is nobody's business.</h2>
+          <div className="lp-trust">
+            <span>Self-custodial</span>
+            <span>Hidden amounts</span>
+            <span>Unlinkable payments</span>
+          </div>
+          <div className="lp-cta">
+            <button className="lp-btn lp-btn-primary" onClick={onPay}>
+              Open private payments <span aria-hidden="true">→</span>
+            </button>
+          </div>
+          <p className="lp-dev">
+            Building an app? The same primitives ship as an{" "}
+            <button className="link-inline" onClick={onEnter}>
+              open SDK
+            </button>
+            <span className="sep">·</span>
+            <a href="https://github.com/romeoscript/soteria" target="_blank" rel="noreferrer">
+              view source
+            </a>
+          </p>
+        </div>
+      </section>
     </section>
   );
 }

@@ -8,6 +8,7 @@ import { History } from "./components/History";
 import { PoolPanel } from "./components/PoolPanel";
 import { ShieldedPanel } from "./components/ShieldedPanel";
 import { PrivacyBadge } from "./components/PrivacyBadge";
+import { Backdrop } from "./components/Backdrop";
 
 type View = "landing" | "app" | "pay" | "history" | "pool" | "shielded";
 type Module = "credential" | "stealth" | "confidential";
@@ -27,10 +28,10 @@ function initialView(): View {
 function Sigil() {
   return (
     <svg className="sigil" viewBox="0 0 40 40" fill="none">
-      <path d="M20 3 6 9v9c0 8 6 13 14 16 8-3 14-8 14-16V9L20 3Z" stroke="#34e7cf" strokeWidth="1.4" opacity="0.45" />
-      <circle cx="14" cy="17" r="2.3" fill="#34e7cf" />
-      <circle cx="26" cy="23" r="2.3" fill="#b07cff" />
-      <line x1="14" y1="17" x2="26" y2="23" stroke="#34e7cf" strokeWidth="1.2" opacity="0.7" />
+      <path d="M20 3 6 9v9c0 8 6 13 14 16 8-3 14-8 14-16V9L20 3Z" stroke="#a66bff" strokeWidth="1.4" opacity="0.55" />
+      <circle cx="14" cy="17" r="2.3" fill="#5aa8ff" />
+      <circle cx="26" cy="23" r="2.3" fill="#ff5fd8" />
+      <line x1="14" y1="17" x2="26" y2="23" stroke="#a66bff" strokeWidth="1.2" opacity="0.8" />
     </svg>
   );
 }
@@ -41,11 +42,8 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="aurora" />
-      <div className="grid" />
-      <div className="grain" />
-
       <div className="wrap">
+        <Backdrop dim={view !== "landing"} />
         <header className="bar">
           <button className="brand" onClick={() => setView("landing")} aria-label="Home">
             <Sigil />

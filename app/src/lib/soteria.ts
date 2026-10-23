@@ -37,7 +37,7 @@ export function connectionPrivacy(): {
   return { level, onionApp, onionRelayer };
 }
 export const RPC_URL =
-  import.meta.env.VITE_SOLANA_RPC ?? "https://api.devnet.solana.com";
+  import.meta.env.VITE_SOLANA_RPC ?? "https://api.mainnet-beta.solana.com";
 export const PROGRAM_ID =
   import.meta.env.VITE_SOTERIA_PROGRAM_ID ??
   "9HNLpUVFX61pX759oy1vuMMwQaQaGnK9KgMyhTrDrRGs";
@@ -47,7 +47,7 @@ export const PROGRAM_ID =
 // switching networks is one env var, not a scavenger hunt through components.
 export type Cluster = "devnet" | "mainnet-beta";
 export const CLUSTER: Cluster =
-  (import.meta.env.VITE_SOLANA_CLUSTER as Cluster) ?? "devnet";
+  (import.meta.env.VITE_SOLANA_CLUSTER as Cluster) ?? "mainnet-beta";
 /** Short human label for badges: "mainnet" | "devnet". */
 export const CLUSTER_LABEL = CLUSTER === "mainnet-beta" ? "mainnet" : CLUSTER;
 export const explorerTx = (sig: string) =>

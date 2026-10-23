@@ -43,7 +43,7 @@ const schema = z.object({
   // pool that is effectively just their own deposit. 1 = no guard (dev only).
   POOL_MIN_ANONYMITY_SET: z.coerce.number().int().min(1).default(1),
 
-  SOLANA_RPC_URL: z.string().url().default("https://api.devnet.solana.com"),
+  SOLANA_RPC_URL: z.string().url().default("https://api.mainnet-beta.solana.com"),
   SOTERIA_PROGRAM_ID: z
     .string()
     .default("9HNLpUVFX61pX759oy1vuMMwQaQaGnK9KgMyhTrDrRGs"),

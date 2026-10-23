@@ -11,7 +11,7 @@ export const AuroraText = memo(
   ({
     children,
     className = "",
-    colors = ["#34e7cf", "#b07cff", "#ff5db1", "#34e7cf"],
+    colors = ["#5aa8ff", "#a66bff", "#ff5fd8", "#5aa8ff"],
     speed = 1,
   }: AuroraTextProps) => {
     const gradientStyle = {
