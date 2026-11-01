@@ -90,6 +90,11 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
             Your wallet is never named as the payer, and the chain never sees who paid whom.
             Self-custodial, end to end.
           </p>
+          <button className="lp-ca" onClick={copyCa} aria-label="Copy contract address">
+            <span className="lp-ca-label">CA</span>
+            <span className="lp-ca-addr">{CA}</span>
+            <span className="lp-ca-copy">{copied ? "Copied" : "Copy"}</span>
+          </button>
           <div className="lp-cta">
             <button className="lp-btn lp-btn-primary" onClick={onPay}>
               Open private payments <span aria-hidden="true">→</span>
@@ -98,11 +103,6 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
               See how it works
             </button>
           </div>
-          <button className="lp-ca" onClick={copyCa} aria-label="Copy contract address">
-            <span className="lp-ca-label">CA</span>
-            <span className="lp-ca-addr">{CA}</span>
-            <span className="lp-ca-copy">{copied ? "Copied" : "Copy"}</span>
-          </button>
         </div>
 
         <div className="lp-scroll" aria-hidden="true">
