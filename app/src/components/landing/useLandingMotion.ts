@@ -61,7 +61,7 @@ function intro() {
       { duration: 1.2, scrambleText: { text: "{original}", chars: "01", speed: 0.6, revealDelay: 0.3 } },
       1.0,
     )
-    .from([".lp-lede", ".lp-cta > *"], { y: 22, opacity: 0, duration: 0.8, stagger: 0.1 }, 1.35)
+    .from([".lp-lede", ".lp-cta > *", ".lp-ca"], { y: 22, opacity: 0, duration: 0.8, stagger: 0.1 }, 1.35)
     .from(".lp-scroll", { opacity: 0, y: -8, duration: 0.6 }, 1.9)
     .add(twinkle, 1.6);
 }

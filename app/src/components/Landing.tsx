@@ -1,7 +1,9 @@
-import { useRef, type PointerEvent } from "react";
+import { useRef, useState, type PointerEvent } from "react";
 import { LiveGraph } from "./LiveGraph";
 import { DotWordmark } from "./landing/DotWordmark";
 import { useLandingMotion } from "./landing/useLandingMotion";
+
+const CA = "Gb6gxoajobfPwQsPEAsah1h7prR6ZS3VzVtZMVa2QAAH";
 
 const STEPS = [
   {
@@ -57,6 +59,13 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
     stepsRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" });
   };
 
+  const [copied, setCopied] = useState(false);
+  const copyCa = async () => {
+    await navigator.clipboard.writeText(CA);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  };
+
   return (
     <section className="lp" ref={root}>
       <div className="lp-hero">
@@ -89,6 +98,11 @@ export function Landing({ onPay, onEnter }: { onPay: () => void; onEnter: () => 
               See how it works
             </button>
           </div>
+          <button className="lp-ca" onClick={copyCa} aria-label="Copy contract address">
+            <span className="lp-ca-label">CA</span>
+            <span className="lp-ca-addr">{CA}</span>
+            <span className="lp-ca-copy">{copied ? "Copied" : "Copy"}</span>
+          </button>
         </div>
 
         <div className="lp-scroll" aria-hidden="true">
