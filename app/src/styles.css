@@ -760,6 +760,16 @@ a.act { text-decoration: none; display: inline-flex; align-items: center; }
   padding: 5px 11px; border-radius: 999px; background: rgba(255, 255, 255, 0.08);
 }
 
+.lp-social { display: flex; gap: 10px; justify-content: center; margin-top: 22px; }
+.lp-social a {
+  display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
+  border-radius: 999px; color: var(--lp-ink-2); border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04); transition: color 0.2s, border-color 0.2s, transform 0.2s;
+}
+.lp-social a:hover { color: var(--ink); border-color: rgba(255, 123, 230, 0.6); transform: translateY(-2px); }
+.lp-social a:focus-visible { outline: 2px solid var(--lp-pink); outline-offset: 3px; }
+.lp-social svg { width: 16px; height: 16px; fill: currentColor; }
+
 .lp-scroll {
   position: absolute; bottom: 8px; left: 50%; translate: -50% 0;
   width: 22px; height: 36px; border-radius: 12px; border: 1.5px solid rgba(255, 255, 255, 0.28);

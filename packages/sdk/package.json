@@ -32,12 +32,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/romeoscript/soteria.git",
+    "url": "git+https://github.com/Soteria-Privacy/soteria.git",
     "directory": "packages/sdk"
   },
-  "homepage": "https://github.com/romeoscript/soteria#readme",
+  "homepage": "https://github.com/Soteria-Privacy/soteria#readme",
   "bugs": {
-    "url": "https://github.com/romeoscript/soteria/issues"
+    "url": "https://github.com/Soteria-Privacy/soteria/issues"
   },
   "publishConfig": {
     "access": "public"
