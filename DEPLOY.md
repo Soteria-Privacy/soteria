@@ -1,119 +1,112 @@
 # Deploy
 
-Three pieces: the **program** (already on devnet), the **backend** (Railway), and
-the **frontend** (Cloudflare Pages / Vercel). The SDK is published to npm
-(`@soteria1/sdk`) and bundled into the frontend — nothing to host.
+Three pieces: the **program** (on-chain, already deployed), and the **backend +
+frontend**, which run together on one VPS managed by
+[Dokploy](https://dokploy.com) from `docker-compose.yml`. The SDK is published
+to npm (`@soteria1/sdk`) and bundled into the frontend — nothing to host.
+
+```
+             ┌──────────────────────── VPS ────────────────────────┐
+ browser ──► │ Traefik (Dokploy, TLS) ─┬─► app     :8080  static SPA │
+             │                         └─► server  :8787  relayer ──┼─► Solana RPC
+             │                                       └─► postgres    │
+             └──────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 1. Backend → Railway
+## 1. Provision the VPS
 
-The backend is a Node process + Postgres that holds the relayer/authority keys
-and signs transactions. It must stay awake (a sleeping relayer = failed
-withdrawals), which is why Railway over a free-tier-that-sleeps host.
+- Ubuntu 24.04, **≥ 2 vCPU / 4 GB RAM / 40 GB disk** (the frontend build compiles
+  native deps and needs the memory), e.g. Hetzner CPX21.
+- Add your SSH key at creation; disable password login.
+- DNS: point two A records at the server IP:
+  - `soteriaprivacy.app` → frontend
+  - `api.soteriaprivacy.app` → backend
 
-### Steps
+Then on the server, as root:
 
-1. **Create the project**
-   - railway.com → *New Project* → *Deploy from GitHub repo* → pick this repo.
-   - Railway reads `railway.json` at the root, so the build/start commands are
-     already configured (build the SDK + server, run migrations, then start).
+```bash
+bash scripts/vps-bootstrap.sh   # ufw, fail2ban, unattended upgrades, Dokploy
+```
 
-2. **Add Postgres**
-   - In the project → *New* → *Database* → *PostgreSQL*. Railway injects a
-     `DATABASE_URL` you'll reference below.
+Open `http://<server-ip>:3000` **right away** and create the admin account
+(the first visitor becomes admin).
 
-3. **Set environment variables** (project → your service → *Variables*):
+## 2. Create the stack in Dokploy
 
-   | Variable | Value |
-   |----------|-------|
-   | `NODE_ENV` | `production` |
-   | `HOST` | `0.0.0.0` |
-   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (reference the PG service) |
-   | `SOLANA_RPC_URL` | a **dedicated** RPC, e.g. Helius devnet (`https://devnet.helius-rpc.com/?api-key=…`) |
-   | `RELAYER_SECRET_KEY` | base58 secret key of a **funded** devnet keypair |
-   | `AUTHORITY_SECRET_KEY` | base58 secret key of a **funded** devnet keypair |
-   | `ADMIN_API_KEY` | a strong random string (≥16 chars) — gates admin routes |
-   | `CORS_ORIGINS` | your frontend URL (e.g. `https://soteria.pages.dev`); `*` only for testing |
-   | `LOG_IP` | `false` (default — no client IP logging) |
-   | `TRUST_PROXY` | `false` |
-   | `POOL_MIN_ANONYMITY_SET` | optional, e.g. `1` |
+1. *Projects → Create project* → *Create service → Compose*.
+2. **Provider:** GitHub → `Soteria-Privacy/soteria`, branch `main`,
+   compose path `./docker-compose.yml`.
+3. **Environment:** paste `deploy/dokploy.env.example` and fill in real values.
+   Use two RPC keys: a server key (`SOLANA_RPC_URL`) and an origin-restricted
+   browser key (`VITE_SOLANA_RPC`) — the `VITE_*` values end up in public JS.
+4. **Domains:**
+   | Service  | Host                     | Port | HTTPS |
+   |----------|--------------------------|------|-------|
+   | `app`    | `soteriaprivacy.app`     | 8080 | Let's Encrypt |
+   | `server` | `api.soteriaprivacy.app` | 8787 | Let's Encrypt |
+5. **Deploy.** Check `https://api.soteriaprivacy.app/health` → `{"ok":true,...}`.
+6. Enable *Auto Deploy* (GitHub webhook) so pushes to `main` redeploy.
 
-   `PORT` is injected by Railway automatically — don't set it; the server reads it.
+Migrations run on every server boot (idempotent). `VITE_*` values are baked in
+at build time — change them, then **redeploy** (not just restart).
 
-   > ⚠️ `RELAYER_SECRET_KEY` / `AUTHORITY_SECRET_KEY` are real keys that sign and
-   > pay fees. Keep them only in Railway's variables (never commit), and fund both
-   > pubkeys with devnet SOL.
+> ⚠️ `RELAYER_SECRET_KEY` / `AUTHORITY_SECRET_KEY` sign and pay fees. Keep them
+> only in Dokploy's environment, fund both pubkeys, and keep the balances small.
 
-4. **Deploy** — Railway builds and starts it. Confirm health:
-   `https://<your-app>.up.railway.app/health` → `{"ok":true,...}`.
+### One-time: initialize a shielded pool (fresh database only)
 
-5. **Initialize a shielded pool** (one-time, after first deploy):
+```bash
+curl -X POST https://api.soteriaprivacy.app/shielded \
+  -H "content-type: application/json" -H "x-api-key: $ADMIN_API_KEY" \
+  -d '{"shieldedId":5}'
+```
+
+## 3. Backups
+
+Postgres lives inside the compose stack, so the simplest reliable backup is a
+host cron dump (or check whether your Dokploy version offers compose backups):
+
+```bash
+# /etc/cron.daily/soteria-pg
+docker exec $(docker ps -qf name=postgres) pg_dump -U soteria soteria \
+  | gzip > /root/backups/soteria-$(date +%F).sql.gz
+find /root/backups -mtime +14 -delete
+```
+
+Copy those off the box (e.g. `rclone` to S3/B2).
+
+## 4. Migrating off Railway
+
+1. Deploy the VPS stack (above) on the `api.` / app domains, but **don't flip DNS yet**
+   — test via Dokploy's generated `traefik.me` domain first.
+2. Pause writes: scale the Railway server down, then copy the database:
    ```bash
-   curl -X POST https://<your-app>.up.railway.app/shielded \
-     -H "content-type: application/json" -H "x-api-key: $ADMIN_API_KEY" \
-     -d '{"shieldedId":0}'
+   pg_dump "$RAILWAY_DATABASE_URL" --no-owner --no-acl > soteria.sql
+   docker exec -i $(docker ps -qf name=postgres) psql -U soteria soteria < soteria.sql
    ```
-   Note the `shieldedId` you pick — the frontend uses it.
+3. Point DNS at the VPS, set the same relayer/authority keys, redeploy.
+4. Once healthy for a few days, delete the Railway project and remove
+   `railway.json`, `app/railway.json`, `app/.railwayignore`, `nixpacks.toml`.
 
-### What Railway runs (from `railway.json`)
-- **build:** `npm install && npm run build:sdk && npm -w server run build`
-- **start:** `npm -w server run migrate:prod && npm -w server start`
-  (migrations are idempotent, so running them on every boot is safe)
+## Circuit artifacts
 
----
+`app/public/*.wasm` / `*.zkey` are committed (exempted in `.gitignore`) because
+the build needs them and they **must match the verifying keys compiled into the
+on-chain program**. Re-running `scripts/setup-*.sh` generates new random keys
+and breaks every proof unless the verifier is redeployed too.
 
-## 2. Frontend → Vercel
+## RPC
 
-A static Vite build. The app pulls **`@soteria1/sdk` from npm** (not the
-workspace), so it deploys as a standalone project — no monorepo build needed.
-`app/vercel.json` sets the framework + SPA rewrites.
-
-### Steps
-
-1. **Import the project**
-   - vercel.com → *Add New… → Project* → import this GitHub repo.
-   - **Root Directory: set it to `app`** (this is the key setting — the app builds
-     itself and installs `@soteria1/sdk` from npm).
-   - Framework Preset: **Vite** (auto-detected; `app/vercel.json` confirms it).
-
-2. **Environment variables** (Project → Settings → Environment Variables):
-
-   | Variable | Value |
-   |----------|-------|
-   | `VITE_SOLANA_RPC` | same dedicated RPC as the backend (Helius devnet) |
-   | `VITE_SOTERIA_SERVER` | your Railway backend URL (e.g. `https://soteria.up.railway.app`) |
-   | `VITE_SOTERIA_SHIELDED_ID` | the pool id you created (e.g. `0`) |
-
-   These are **build-time** (Vite inlines them), so redeploy after changing them.
-
-3. **Deploy.** Vercel runs `npm install` + `npm run build` in `app/`, output `dist`.
-   The app serves `transaction.wasm` (2.5 MB) and `transaction_final.zkey` (12 MB)
-   from `app/public` — Vercel handles these fine.
-
-4. **Wire CORS:** copy the Vercel URL and set it as the backend's `CORS_ORIGINS`
-   on Railway, then redeploy the backend.
-
-> **Note:** because the app uses the *published* SDK, an SDK code change only
-> reaches Vercel after you `npm version` + republish `@soteria1/sdk` and bump the
-> app's dependency. Local dev still uses the live workspace SDK.
-
----
-
-## 3. RPC
-
-Don't use the public `api.devnet.solana.com` in production — it rate-limits the
-relayer and **blocks `getProgramAccounts`** (breaks pool rehydration). Use a free
-**Helius** / QuickNode devnet endpoint for both `SOLANA_RPC_URL` and
-`VITE_SOLANA_RPC`.
-
----
+Never use the public `api.mainnet-beta.solana.com`: it returns `403` to browsers
+(wallet balances show `0`) and rate-limits the relayer. Use Helius / QuickNode /
+Triton.
 
 ## Notes
 
-- **Mainnet:** everything here is devnet. Going to mainnet needs a program
-  redeploy there, mainnet-funded keys, an **audit** of the circuits/program, and
-  a real multi-party trusted-setup ceremony.
-- **Privacy hardening:** to run the backend behind the Tor onion (no client IP at
-  all), see `scripts/onion.sh` — that's a more advanced, self-hosted setup, not
-  Railway.
+- **Mainnet:** the hidden-amount circuit is unaudited and the trusted setup is
+  single-contributor — hold only small amounts until there's an audit and a real
+  multi-party ceremony.
+- **Tor:** to serve the relayer as an onion service on the same VPS, see
+  `docs/TOR.md` and `scripts/onion.sh`.

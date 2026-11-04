@@ -1,0 +1,76 @@
+# Full Soteria stack for a single VPS, deployed with Dokploy (Docker Compose app).
+# Dokploy's Traefik terminates TLS and routes the domains you attach in its UI
+# ("Domains" tab → service `app` port 8080, service `server` port 8787), so no
+# ports are published to the host here. Values come from Dokploy's
+# "Environment" tab — see deploy/dokploy.env.example.
+#
+# Local smoke test:  cp deploy/dokploy.env.example .env && docker compose up --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: soteria
+      POSTGRES_DB: soteria
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soteria -d soteria"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8787"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 8787
+      DATABASE_URL: postgres://soteria:${POSTGRES_PASSWORD}@postgres:5432/soteria
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL:?set SOLANA_RPC_URL}
+      SOTERIA_PROGRAM_ID: ${SOTERIA_PROGRAM_ID:-9HNLpUVFX61pX759oy1vuMMwQaQaGnK9KgMyhTrDrRGs}
+      RELAYER_SECRET_KEY: ${RELAYER_SECRET_KEY:?set RELAYER_SECRET_KEY}
+      AUTHORITY_SECRET_KEY: ${AUTHORITY_SECRET_KEY:?set AUTHORITY_SECRET_KEY}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS}
+      LOG_IP: ${LOG_IP:-false}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      POOL_MIN_ANONYMITY_SET: ${POOL_MIN_ANONYMITY_SET:-1}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build:
+      context: ./app
+      # Vite inlines these at build time — change them, then redeploy.
+      args:
+        VITE_SOLANA_CLUSTER: ${VITE_SOLANA_CLUSTER:-mainnet-beta}
+        VITE_SOLANA_RPC: ${VITE_SOLANA_RPC:?set VITE_SOLANA_RPC}
+        VITE_SOTERIA_SERVER: ${VITE_SOTERIA_SERVER:?set VITE_SOTERIA_SERVER}
+        VITE_SOTERIA_PROGRAM_ID: ${SOTERIA_PROGRAM_ID:-9HNLpUVFX61pX759oy1vuMMwQaQaGnK9KgMyhTrDrRGs}
+        VITE_SOTERIA_POOL_ID: ${VITE_SOTERIA_POOL_ID:-0}
+        VITE_SOTERIA_SHIELDED_ID: ${VITE_SOTERIA_SHIELDED_ID:-5}
+        VITE_SOTERIA_GROUP_ID: ${VITE_SOTERIA_GROUP_ID:-0}
+        VITE_SOTERIA_EXTERNAL_NULLIFIER: ${VITE_SOTERIA_EXTERNAL_NULLIFIER:-1}
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      PORT: 8080
+
+volumes:
+  pgdata:

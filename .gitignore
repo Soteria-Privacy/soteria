@@ -20,3 +20,9 @@ deploy/tor/hs/
 deploy/tor/data/
 deploy/tor/hs-app/
 deploy/tor/data-app/
+
+# Browser-side circuit artifacts are served publicly and MUST match the on-chain
+# verifying keys, so they're committed (Dokploy builds from git). Never
+# regenerate them without redeploying the verifier program.
+!app/public/*.wasm
+!app/public/*.zkey
